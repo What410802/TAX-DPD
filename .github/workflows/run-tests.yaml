@@ -1,0 +1,46 @@
+name: Run Tests
+
+on:
+  workflow_call:
+    inputs:
+      install_string:
+        required: True
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+          cache: "pip"
+          cache-dependency-path: "pyproject.toml"
+
+      - name: pip & wheel
+        run: pip install pip==23.3.1 wheel==0.38.0
+
+      - name: Install GPU requirements.
+        run: pip install -r requirements-gpu.txt
+
+      - name: Install DEDO.
+        run: pip install -e third_party/dedo
+
+      - name: Install DP3.
+        run: pip install -e third_party/3D-Diffusion-Policy/3D-Diffusion-Policy
+
+      - name: Install package
+        run: pip install "${{ inputs.install_string }}"
+
+      # - name: Code Quality
+      #   run: python -m black src/ tests/ --check
+
+      - name: MyPy Typechecking
+        run: python -m mypy src/ tests/
+
+      # Run tests.
+      - name: Test with pytest
+        run: python -m pytest
