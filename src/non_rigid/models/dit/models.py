@@ -1381,6 +1381,15 @@ def DiT_S_8(**kwargs):
     return DiT(depth=12, hidden_size=384, patch_size=8, num_heads=6, **kwargs)
 
 
+# ─── Backward-compatibility aliases ─────────────────────────────────────────
+# tax3d.py (TAX3D v1) and df_base.py were written against an older version of
+# this file that had DiT_PointCloud_Unc / DiT_PointCloud_Unc_Cross / DiT_PointCloud.
+# Map them to the closest current equivalents so those imports keep working.
+DiT_PointCloud_Unc       = DiT_PointCloud_Cross   # self-attn → cross-attn (approx)
+DiT_PointCloud_Unc_Cross = DiT_PointCloud_Cross   # exact rename
+DiT_PointCloud           = DiT_PointCloud_Cross   # scene-level variant
+Rel3D_DiT_PointCloud_Unc_Cross = DiT_PointCloud_Cross  # relative-3D variant alias
+
 DiT_models = {
     'DiT-XL/2': DiT_XL_2,  'DiT-XL/4': DiT_XL_4,  'DiT-XL/8': DiT_XL_8,
     'DiT-L/2':  DiT_L_2,   'DiT-L/4':  DiT_L_4,   'DiT-L/8':  DiT_L_8,

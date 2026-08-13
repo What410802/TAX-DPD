@@ -98,6 +98,10 @@ class RPDiffDataset(data.Dataset):
         goal_action_pc = torch.as_tensor(child_final_pcd).float()
         goal_anchor_pc = torch.as_tensor(parent_final_pcd).float()  # same as anchor_pc
 
+        # Skip demos with empty point clouds
+        if action_pc.shape[0] == 0 or anchor_pc.shape[0] == 0:
+            return self.__getitem__((index + 1) % self.num_demos)
+
         action_seg = torch.zeros_like(action_pc[:, 0]).int()
         anchor_seg = torch.ones_like(anchor_pc[:, 0]).int()
 
@@ -241,8 +245,12 @@ class RPDiffDataset(data.Dataset):
         item["pc_anchor"] = anchor_pc # Anchor points in the scene frame
         item["seg"] = action_seg
         item["seg_anchor"] = anchor_seg
-        item["T_goal2world"] = T_goal2world.get_matrix().squeeze(0) # Transform from goal action frame to world frame
-        item["T_action2world"] = T_action2world.get_matrix().squeeze(0) # Transform from action frame to world frame
+        item["T_goal2world"] = T_goal2world.get_matrix().squeeze(0)
+        item["T_action2world"] = T_action2world.get_matrix().squeeze(0)
+        # T_action2goal: rigid transform from action frame → goal frame
+        # = T_goal2world^{-1} ∘ T_action2world
+        T_action2goal = T_goal2world.inverse().compose(T_action2world)
+        item["T_action2goal"] = T_action2goal.get_matrix().squeeze(0)
         
         # Training-specific labels.
         # TODO: eventually, rename this key to "point"

@@ -3,7 +3,7 @@ name: rpdiff
 #####################################################
 # Dataset Parameters
 #####################################################
-data_dir: /data/lyuxing/tax3d/rpdiff/data/task_demos/
+data_dir: /home/yuchi/data/rpdiff/data/task_demos/
 material: rigid
 
 ###################################################
@@ -11,7 +11,7 @@ material: rigid
 ###################################################
 rpdiff_task_name: mug_rack_easy_single
 rpdiff_task_type: task_name_mug_on_rack
-rpdiff_descriptions_path: /data/lyuxing/tax3d/rpdiff/descriptions/
+rpdiff_descriptions_path: /home/yuchi/data/rpdiff/descriptions/
 
 ###################################################
 # General Dataset Parameters

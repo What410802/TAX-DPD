@@ -1,0 +1,9 @@
+batch_size: 32
+val_batch_size: 16
+sample_size: null
+sample_size_anchor: null
+num_wta_trials: 20
+num_trials: 1
+num_gmm_trials: 1
+
+action_full: False

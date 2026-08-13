@@ -1,0 +1,544 @@
+╭─── Claude Code v2.1.212 ─────────────────────────────────────────────────────╮
+│                                       │ Tips for getting started             │
+│             Welcome back!             │ Run /init to create a CLAUDE.md fil… │
+│                                       │ ──────────────────────────────────── │
+│                ▐▛███▜▌                │ What's new                           │
+│               ▝▜█████▛▘               │ Check the Claude Code changelog for… │
+│                 ▘▘ ▝▝                 │                                      │
+│                                       │                                      │
+│   claude-opus-5 · API Usage Billing   │                                      │
+│     ~/Work/Research/robust-placer     │                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+
+✻ Conversation compacted (ctrl+o for history)
+
+
+● 综述被 /novelty-check 更新过。我改 4 处：表格行、Delta 条目、BibTeX、以及
+  venue caveat（现在有一篇可确证了）。
+
+● Bash(sed -n '232,238p' literature/related_work.md)
+  ⎿  @article{he2026taxdpd,
+       title={Disentangled Point Diffusion for Precise Object Placement},
+       author={He, Lyuxing and Cai, Eric and Aggarwal, Shobhit and Wang, Ji
+     … +6 lines (ctrl+o to expand)
+  ⎿  Referenced file literature/related_work.md
+  ⎿  Read .aris/verify-papers/candidate_papers.json (58 lines)
+  ⎿  Read .aris/metafetch.py (40 lines)
+  ⎿  Read .aris/snowball.py (41 lines)
+  ⎿  Read .aris/qsearch.py (36 lines)
+
+● Bash(sed -n '1,12p' literature/related_work.md; echo "-----32----"; sed -n
+      '32p' literature/related_work.md; echo "-----133,148----"; sed -n
+      '133,148p' literature/re…)
+  ⎿  # Literature Landscape — 通用机器人放置 (Generalizable Object Placemen
+     t)
+     … +42 lines (ctrl+o to expand)
+
+● Update(literature/related_work.md)
+  ⎿  Added 1 line
+       6  > Verification: 55/55 arXiv-verified, hallucination rate 0.0; 0
+           pending.
+       7  > **Updated 2026-07-25 by `/novelty-check`** (gpt-5.6-sol xhigh
+          , 7/10 PROCEED WITH CAUTION): +5 篇先验工作，其中 [SceneCollisi
+          onNet](https://arxiv.org/abs/2011.10726)（2020, 1M 场景/20 亿碰
+          撞查询）**推翻了「放置缺少大规模数据引擎」这一表述**——碰撞维度
+          早已规模化，缺的是稳定性/clearance 维度。详见 *Novelty & Positi
+          oning Updates → Round 1*。
+       8  > **Venue caveat**: S2/OpenAlex venue lookup was rate-limited t
+          his run; the `Venue/Yr` column reports **arXiv 首发/最新版年月*
+          *. 多篇已发表于 CoRL/RSS/ICRA/RA-L，但本轮未能程序化核实，故一
+          律标注为 arXiv。
+       9 +> **Venue 更正（2026-07-27）**：TAX-DPD (2604.11793) 已人工核实
+         +为 **ICRA 2026**——依据是官方代码仓 <https://github.com/lyuxingh
+         +e/TAX-DPD> 的 README 自述 "Official code release for our ICRA 2
+         +026 paper" 及其 BibTeX。表中该行已更新；其余条目的 venue 仍未核
+         +实。                                                           
+      10  
+      11  ## Scope & Decomposition
+      12  
+
+● Update(literature/related_work.md)
+  ⎿  Added 1 line, removed 1 line
+      30  | [AnyPlace: Learning Generalized Object Placement for Robot Ma
+          nipulation](https://arxiv.org/abs/2502.04531) | arXiv 2025-02 (
+          v2 2025-09) | 两阶段：VLM 粗定位相关区域 → 局部放置位姿预测模型
+          ；**纯合成数据**训练（随机几何体，覆盖插入/堆叠/挂置） | **当前
+          该方向最强 anchor**。与 GraspGen 同构：合成数据 + 局部化生成。
+          但数据规模远小，无判别器 | ✅ verified (arxiv) |
+      31  | [GOPLA: Generalizable Object Placement Learning via Synthetic
+           Augmentation of Human Arrangement](https://arxiv.org/abs/2510.
+          14627) | arXiv 2025-10 | 分层：MLLM 把指令+视觉转成成对物体关系
+          计划 → spatial mapper 生成 3D affordance map → diffusion planne
+          r 用 test-time cost 采位姿（多计划分布 + 避碰） | 唯一同时处理*
+          *语义偏好 + 几何可行**的通用框架；从人类布置示范做合成增强解决
+          数据稀缺 | ✅ verified (arxiv) |
+      32  | [Placeit!: A Framework for Learning Robot Object Placement Sk
+          ills](https://arxiv.org/abs/2510.09267) | arXiv 2025-10 | 显式
+          对标 Graspit!：**进化计算 / quality-diversity** 自动生成有效放
+          置位姿（桌面、堆叠、插入），用于造数据 | **数据引擎层面最直接的
+           "GraspGen for place" 对标**；真机 120 次部署 90% 成功 | ✅ ver
+          ified (arxiv) |
+      33 -| [Disentangled Point Diffusion for Precise Object Placement (T
+         -AX-DPD)](https://arxiv.org/abs/2604.11793) | arXiv 2026-04 | 分
+         -层解耦点扩散：feed-forward Dense GMM 给全局稠密先验 + 局部点扩 
+         -散精修 | 2026 年精度/多模态覆盖/几何泛化 SOTA；goal-prediction 
+         -范式的最新代表 | ✅ verified (arxiv) |                         
+      33 +| [Disentangled Point Diffusion for Precise Object Placement (T
+         +AX-DPD)](https://arxiv.org/abs/2604.11793) | **ICRA 2026** | 分
+         +层解耦点扩散：feed-forward Dense GMM 给全局稠密先验 + 局部点扩 
+         +散精修 | 2026 年精度/多模态覆盖/几何泛化 SOTA；goal-prediction 
+         +范式的最新代表 | ✅ verified (arxiv) |                         
+      34  | [Stimulating Imagination: Towards General-purpose "Something 
+          Something Placement" (SPORT)](https://arxiv.org/abs/2408.01655)
+           | arXiv 2024-08 (v2 2025-07) | 三段式：物体定位 → 目标想象 (go
+          al imagination) → 控制；预训练大视觉模型做语义推理 + diffusion 
+          位姿估计器 | 最早明确提「general-purpose placement」的工作之一
+          ，"something something" 指令泛化 | ✅ verified (arxiv) |
+      35  | [Learning to Place Unseen Objects Stably using a Large-scale 
+          Simulation (UOP-Net)](https://arxiv.org/abs/2303.08387) | arXiv
+           2023-03 (v2 2023-09) | 定义 Unseen Object Placement (UOP) 问题
+          ；UOP-Sim 大规模仿真数据集 + UOP-Net 点云分割式稳定面预测，仅需
+           partial observation | 放置领域第一个「大规模数据集 + 模型」组
+          合，是 GraspGen 式配方的早期雏形 | ✅ verified (arxiv) |
+      36  | [Generating Stable Placements via Physics-guided Diffusion Mo
+          dels](https://arxiv.org/abs/2509.21664) | arXiv 2025-09 | 把稳
+          定性**直接嵌入扩散采样过程**：离线 sampling-based planner 采多
+          模态标签训练扩散先验，再用 score 组合性叠加 stability-aware los
+          s | 相当于 GraspGen 判别器的「可微替代」：不用仿真也不用外观启
+          发式 | ✅ verified (arxiv) |
+
+● Update(literature/related_work.md)
+  ⎿  Added 1 line, removed 1 line
+      133  
+      134  **判别器这一环已有零件，但没被组装。** GraspGen 的关键创新是 o
+           n-generator 训练的判别器。放置侧对应的零件散落在三篇里：**Plac
+           eability Metric**（2510.14584）从原始点云联合打分稳定性+可抓性
+           +边缘 clearance，且显式处理桌沿与倾斜支撑面这些被普遍忽略的情
+           形；**Physics-guided Diffusion**（2509.21664）把稳定性 loss 用
+            score 组合性直接叠进扩散采样，等于一个可微判别器；**6-DoF Sta
+           bility Field**（2310.17649）学稳定性场。三者都没有与一个大规模
+           生成器配对训练。
+      135  
+      136 -**多模态性是放置相对抓取的额外难点，且已被充分认识。** 同一个 
+          -书架有几十个等价插槽，单峰回归会平均塌陷到无效解。RPDiff 用迭 
+          -代位姿去噪拟合多模态示范；DAP 显式建模同容器多解；TAX-DPD（202
+          -6-04）用 Dense GMM 全局先验 + 局部点扩散，在精度与模式覆盖上取
+          -得 SOTA；PlaceIt3D 干脆把歧义写进任务定义。共识很强：**放置必 
+          -须是生成式的**。分歧在表征——点云扩散（RPDiff/TAX-DPD）、等变网
+          -络（TAX-Pose 系、Transporter 系）、还是渲染—打分（Dream2Real）
+          -。                                                            
+      136 +**多模态性是放置相对抓取的额外难点，且已被充分认识。** 同一个 
+          +书架有几十个等价插槽，单峰回归会平均塌陷到无效解。RPDiff 用迭 
+          +代位姿去噪拟合多模态示范；DAP 显式建模同容器多解；TAX-DPD（ICR
+          +A 2026）用 Dense GMM 全局先验 + 局部点扩散，在精度与模式覆盖上
+          +取得 SOTA；PlaceIt3D 干脆把歧义写进任务定义。共识很强：**放置 
+          +必须是生成式的**。分歧在表征——点云扩散（RPDiff/TAX-DPD）、等变
+          +网络（TAX-Pose 系、Transporter 系）、还是渲染—打分（Dream2Real
+          +）。                                                          
+      137  
+      138  **2026 年的三个新趋势。** (a) **VLA 与放置的结合被证明需要显式
+           中间表征**：AnySlot（2026-04）指出端到端 VLA 做不到厘米级槽位
+           放置，改为把语言渲染成空间 marker 视觉目标再交给 goal-conditio
+           ned VLA，并发布 SlotBench；这与「图像编辑生成目标图」的 AeroPl
+           ace-Flow 同属「显式目标想象」思路。(b) **放置不再假设无碰撞**
+           ：Pack it in（2026-02）主动推挤已放物体腾空间，Push-Placement 
+           用被抓物体推开障碍。(c) **affordance 表示域的反思**：VulcanVox
+           el（2026-06）主张把自由空间 affordance 建在 3D occupancy field
+            上而非 SE(3) 位姿分布上，认为后者「在错误的域里提问」。
+      139  
+
+● Update(literature/related_work.md)
+  ⎿  Added 1 line, removed 1 line
+      144  1. **AnyPlace (2502.04531)** — 最近的对标物。Delta：无判别器/
+           打分器；数据由随机几何体程序生成，未验证与真实物体分布的差距；
+           只覆盖插入/堆叠/挂置，不含语义偏好与装箱；未做跨夹爪/跨本体。
+      145  2. **GOPLA (2510.14627)** — 唯一语义+几何统一的分层框架。Delta
+           ：依赖 MLLM 出关系计划，受限于成对关系的表达力；扩散规划器靠 t
+           est-time cost 而非学到的判别器；未处理接触密集型插入。
+      146  3. **Placeit! (2510.09267)** — 数据引擎最直接对标。Delta：产出
+           的是位姿数据集与 pipeline，**不是**一个可泛化的前馈生成模型；Q
+           D 优化在线成本高，无法像 GraspGen 那样一次前向出候选。
+      147 -4. **TAX-DPD (2604.11793)** — 2026 精度/多模态 SOTA。Delta：仍
+          -是 demo-driven 的 relative placement，需要每任务示范；无语义层
+          -；未在大规模跨任务数据上训练。                                
+      147 +4. **TAX-DPD (2604.11793, ICRA 2026)** — 2026 精度/多模态 SOTA
+          +，**已开源**（<https://github.com/lyuxinghe/TAX-DPD>，代码 rel
+          +eased，但安装/训练/评测文档与预训练权重截至 2026-07 均未发布；
+          +仓库是 TAX3D 代码库的 v2，包名仍为 `non_rigid`）。Delta：仍是 
+          +demo-driven 的 relative placement，需要每任务示范；无语义层； 
+          +未在大规模跨任务数据上训练。复现成本见 [third_party/taxdpd_260
+          +4.11793_contributions.md](../third_party/taxdpd_2604.11793_con
+          +tributions.md)。                                              
+      148  5. **M2T2 (2311.00926)** — NVIDIA 同门，抓+放统一模型的先例。D
+           elta：放置分支能力远弱于抓取分支，且未被 GraspGen 继承——GraspG
+           en 只做了抓取。**这正是本方向的机会窗口**。
+      149  
+      150  ### Gaps This Idea Fills
+
+● Update(literature/related_work.md)
+  ⎿  Added 4 lines, removed 3 lines
+      230    author={Ferrad, Amina and Huber, Johann and H{\'e}l{\'e}non,
+            Fran{\c{c}}ois and Gleyze, Julien and others},
+      231    journal={arXiv preprint arXiv:2510.09267}, year={2025}}
+      232  
+      233 -@article{he2026taxdpd,                                        
+      233 +@inproceedings{he2026taxdpd,                                  
+      234    title={Disentangled Point Diffusion for Precise Object Place
+           ment},
+      235 -  author={He, Lyuxing and Cai, Eric and Aggarwal, Shobhit and 
+          -Wang, Jianjun and others},                                    
+      236 -  journal={arXiv preprint arXiv:2604.11793}, year={2026}}     
+      235 +  author={He, Lyuxing and Cai, Eric and Aggarwal, Shobhit and 
+          +Wang, Jianjun and Held, David},                               
+      236 +  booktitle={IEEE International Conference on Robotics and Aut
+          +omation (ICRA)},                                              
+      237 +  year={2026}, note={arXiv:2604.11793}}                       
+      238  
+      239  @article{simeonov2023rpdiff,
+      240    title={Shelving, Stacking, Hanging: Relational Pose Diffusio
+           n for Multi-modal Rearrangement},
+
+● 综述改完。现在补 third_party 文档。
+
+● Bash(sed -n '1,35p' third_party/taxdpd_2604.11793_contributions.md; echo "===
+      TAIL ==="; tail -30 third_party/taxdpd_2604.11793_contributions.md; echo
+      "=== SEC HEADS…)
+  ⎿  Error: Exit code 2
+     sed: 无法读取 third_party/taxdpd_2604.11793_contributions.md: 
+     没有那个文件或目录
+     === TAIL ===
+     tail: 无法以读模式打开 'third_party/taxdpd_2604.11793_contributions.md': 
+     没有那个文件或目录
+     === SEC HEADS ===
+     ugrep: warning: third_party/taxdpd_2604.11793_contributions.md: No such 
+     file or directory
+
+● Bash(pwd; ls third_party/ 2>/dev/null; ls
+      /home/ghz/Work/Research/robust-placer/third_party/)
+  ⎿  /home/ghz/Work/Research/robust-placer
+     canonical_space_survey.pdf
+     canonical_space_survey.pdf
+
+● Bash(find . -name "*taxdpd*" -o -name "*rtc_2506*" 2>/dev/null | head; echo
+      "--- git status ---"; git status --short | head -20)
+  ⎿  ./docs/rtc_2506.07339_guidance_notes.md
+     ./docs/taxdpd_2604.11793_contributions.md
+     --- git status ---
+     … +2 lines (ctrl+o to expand)
+
+● 文档实际在 docs/，不是 third_party/。先修正刚才那条链接，再读文档。
+
+● Update(literature/related_work.md)
+  ⎿  Added 1 line, removed 1 line
+      144  1. **AnyPlace (2502.04531)** — 最近的对标物。Delta：无判别器/
+           打分器；数据由随机几何体程序生成，未验证与真实物体分布的差距；
+           只覆盖插入/堆叠/挂置，不含语义偏好与装箱；未做跨夹爪/跨本体。
+      145  2. **GOPLA (2510.14627)** — 唯一语义+几何统一的分层框架。Delta
+           ：依赖 MLLM 出关系计划，受限于成对关系的表达力；扩散规划器靠 t
+           est-time cost 而非学到的判别器；未处理接触密集型插入。
+      146  3. **Placeit! (2510.09267)** — 数据引擎最直接对标。Delta：产出
+           的是位姿数据集与 pipeline，**不是**一个可泛化的前馈生成模型；Q
+           D 优化在线成本高，无法像 GraspGen 那样一次前向出候选。
+      147 -4. **TAX-DPD (2604.11793, ICRA 2026)** — 2026 精度/多模态 SOTA
+          -，**已开源**（<https://github.com/lyuxinghe/TAX-DPD>，代码 rel
+          -eased，但安装/训练/评测文档与预训练权重截至 2026-07 均未发布；
+          -仓库是 TAX3D 代码库的 v2，包名仍为 `non_rigid`）。Delta：仍是 
+          -demo-driven 的 relative placement，需要每任务示范；无语义层； 
+          -未在大规模跨任务数据上训练。复现成本见 [third_party/taxdpd_260
+          -4.11793_contributions.md](../third_party/taxdpd_2604.11793_con
+          -tributions.md)。                                              
+      147 +4. **TAX-DPD (2604.11793, ICRA 2026)** — 2026 精度/多模态 SOTA
+          +，**已开源**（<https://github.com/lyuxinghe/TAX-DPD>，代码 rel
+          +eased，但安装/训练/评测文档与预训练权重截至 2026-07 均未发布；
+          +仓库是 TAX3D 代码库的 v2，包名仍为 `non_rigid`）。Delta：仍是 
+          +demo-driven 的 relative placement，需要每任务示范；无语义层； 
+          +未在大规模跨任务数据上训练。复现成本见 [docs/taxdpd_2604.11793
+          +_contributions.md](../docs/taxdpd_2604.11793_contributions.md)
+          +。                                                            
+      148  5. **M2T2 (2311.00926)** — NVIDIA 同门，抓+放统一模型的先例。D
+           elta：放置分支能力远弱于抓取分支，且未被 GraspGen 继承——GraspG
+           en 只做了抓取。**这正是本方向的机会窗口**。
+      149  
+      150  ### Gaps This Idea Fills
+
+● Bash(sed -n '1,30p' docs/taxdpd_2604.11793_contributions.md; echo "=== SEC
+      HEADS ==="; grep -n '^## \|^# ' docs/taxdpd_2604.11793_contributions.md;
+      echo "=== TAIL 20…)
+  ⎿  # TAX-DPD 主要贡献解读：用「解耦点扩散」做高精度物体放置
+
+     > **论文**：*Disentangled Point Diffusion for Precise Object Placement
+     … +59 lines (ctrl+o to expand)
+● Now the header + TOC:
+
+● Update(docs/taxdpd_2604.11793_contributions.md)
+  ⎿  Added 2 lines, removed 2 lines
+      2  
+      3  > **论文**：*Disentangled Point Diffusion for Precise Object Pla
+         cement*
+      4  > **作者**：Lyuxing He, Eric Cai, Shobhit Aggarwal, Jianjun Wang
+         , David Held（CMU RPAD；致谢 ABB Inc.）
+      5 -> **出处**：arXiv:2604.11793 (v1, 2026-04-13)，cs.RO ｜ 基金：NS
+        -F CAREER IIS-2046491                                            
+      6 -> **链接**：<https://arxiv.org/abs/2604.11793> ｜ HTML：<https:/
+        -/arxiv.org/html/2604.11793v1>                                   
+      5 +> **出处**：**ICRA 2026**（预印本 arXiv:2604.11793 v1, 2026-04-1
+        +3, cs.RO）｜ 基金：NSF CAREER IIS-2046491                       
+      6 +> **链接**：<https://arxiv.org/abs/2604.11793> ｜ HTML：<https:/
+        +/arxiv.org/html/2604.11793v1> ｜ 代码：<https://github.com/lyuxi
+        +nghe/TAX-DPD>                                                   
+      7  > **命名**：TAX-DPD = **TA**sk-specific **X**(Cross)-Geometry re
+         asoning with **D**isentangled **P**oint **D**iffusion
+      8  >
+      9  > 本文档梳理这篇论文到底新增了什么、每个新增件贡献多少性能，以及
+         哪些零件可以拿来复用。
+
+● Update(docs/taxdpd_2604.11793_contributions.md)
+  ⎿  Added 1 line
+      20  - [六、假设与局限](#六假设与局限)
+      21  - [七、对 robust-placer 的可复用价值](#七对-robust-placer-的可
+          复用价值)
+      22  - [八、一句话打包带走](#八一句话打包带走)
+      23 +- [九、开源状态与复现配置](#九开源状态与复现配置)              
+      24  - [附录：符号速查表](#附录符号速查表)
+      25  
+      26  ---
+
+● Bash(sed -n '292,300p' docs/taxdpd_2604.11793_contributions.md)
+  ⎿  ## 八、一句话打包带走
+
+     **放置的目标应该表示成点云而不是 SE(3)
+     位姿（跨几何时没有一致参考系）；
+     … +9 lines (ctrl+o to expand)
+
+● Update(docs/taxdpd_2604.11793_contributions.md)
+  ⎿  Added 110 lines
+      295  
+      296  ---
+      297  
+      298 +## 九、开源状态与复现配置                                     
+      299 +                                                              
+      300 +> 本节信息核实于 **2026-07-27**，来源为官方仓库 <https://githu
+          +b.com/lyuxinghe/TAX-DPD> 的 README、`pyproject.toml`、`Dockerf
+          +ile`、`requirements-gpu.txt`、`configs/` 与 `autobot.md`。仓库
+          +最近一次 push 为 2026-06-22。                                 
+      301 +                                                              
+      302 +### 9.1 开源了吗：代码有，但「能跑起来的那套」还没齐          
+      303 +                                                              
+      304 +**结论：已开源代码，但尚不可开箱复现。**                      
+      305 +                                                              
+      306 +README 里作者自己列的 roadmap 是最诚实的答案：                
+      307 +                                                              
+      308 +| 条目 | 状态 |                                               
+      309 +|---|---|                                                     
+      310 +| Initial code release | ✅ 已完成 |                          
+      311 +| Installation instructions | ❌ 未完成 |                     
+      312 +| Training instructions | ❌ 未完成 |                         
+      313 +| Evaluation instructions | ❌ 未完成 |                       
+      314 +| Pre-trained checkpoints | ❌ 未完成 |                       
+      315 +                                                              
+      316 +也就是说：模型、数据加载、训练脚本、配置文件都在，但**没有安装
+          +文档、没有训练/评测说明、没有任何预训练权重**。论文里的每一个 
+          +数字，你想要就得自己从头训。                                  
+      317 +                                                              
+      318 +两个容易被误导的地方：                                        
+      319 +                                                              
+      320 +1. **信息源互相打架。** 项目主页挂着 GitHub 链接，但第一作者个
+          +人主页当时仍写着 "Code (coming soon)"。以仓库实际状态为准——它 
+          +是真实存在且有内容的（GitHub API 返回 200，Python，0 star）。 
+      321 +2. **附录不在 arXiv 上。** 论文的补充材料通过 Google Drive 单 
+          +独分发，arXiv 版本不含附录。要看完整超参与额外消融得去项目页拿
+          + Supplement。                                                 
+      322 +                                                              
+      323 +### 9.2 一个对复现很关键的发现：这是 TAX3D 的 v2 代码库       
+      324 +                                                              
+      325 +打开 `pyproject.toml` 会看到包名不是 `taxdpd`，而是：         
+      326 +                                                              
+      327 +```toml                                                       
+      328 +name = "non_rigid"                                            
+      329 +description = "TAX3D: Non-Rigid Relative Placement through Den
+          +se Diffusion"                                                 
+      330 +authors = ["eycai", "oadonca", "baeisner", "dheld"]           
+      331 +```                                                           
+      332 +                                                              
+      333 +模型配置文件也叫 `configs/model/tax3dv2.yaml`。**TAX-DPD 是在 
+          +TAX3D（2410.19247）代码库上迭代出来的第二版**，不是一个从零写 
+          +的新仓库。                                                    
+      334 +                                                              
+      335 +这对复现是好消息：TAX3D 已经有一批用户踩过坑，它的 issue、安装
+          +经验、数据组织方式可以直接迁移过来，某种程度上补上了缺失的安装
+          +文档。                                                        
+      336 +                                                              
+      337 +### 9.3 软件环境：全是硬钉死的版本，别想用新版凑合            
+      338 +                                                              
+      339 +`Dockerfile` + `requirements-gpu.txt` 给出的是一套 **2023 年的
+          +锁死栈**：                                                    
+      340 +                                                              
+      341 +| 组件 | 版本 | 备注 |                                        
+      342 +|---|---|---|                                                 
+      343 +| 基础镜像 | `nvidia/cuda:11.8.0-devel-ubuntu20.04` | **必须 d
+          +evel**，要编译扩展 |                                          
+      344 +| Python | 3.9（pyenv 装） | pytorch3d 轮子只按这个版本编 |   
+      345 +| PyTorch | `2.0.1+cu118` | torchvision 0.15.2 / torchaudio 2.
+          +0.2 |                                                         
+      346 +| PyTorch3D | `py39_cu118_pyt201` 预编译轮子 | 版本三元组错一 
+          +个就装不上 |                                                  
+      347 +| PyG 全家 | `pyg_lib 0.4.0`、`torch_scatter 2.1.2`、`torch_sp
+          +arse 0.6.18`、`torch_cluster 1.6.3`、`torch_spline_conv 1.2.2`
+          + | 同样按 cu118+pyt201 匹配 |                                 
+      348 +| 训练框架 | `lightning 2.0.3` + `hydra-core 1.3.2` + `wandb 0
+          +.15.4` | wandb 默认开，离线要手动关 |                         
+      349 +| 扩散 | `diffusers 0.26.3` | |                               
+      350 +| 仿真 | `pybullet 3.2.6`、`gym 0.21.0` | RPDiff 套件依赖 |   
+      351 +| 子模块 | `third_party/dedo`、`third_party/3D-Diffusion-Polic
+          +y` | 以 editable 方式装 |                                     
+      352 +                                                              
+      353 +**踩坑预警一：`gym==0.21.0` 在新版 pip/setuptools 上装不上**（
+          +著名的 `metadata generation failed`）。Dockerfile 里把 pip 钉 
+          +在 23.3.1、setuptools 钉在 65.5 正是为了绕开这个。别用系统最新
+          + pip。                                                        
+      354 +                                                              
+      355 +**踩坑预警二：强烈建议直接用 Dockerfile**，不要在宿主机 conda 
+          +里手搓。PyTorch3D + PyG + CUDA 11.8 这个组合手装的失败率很高，
+          +而且现在没有安装文档兜底。                                    
+      356 +                                                              
+      357 +**踩坑预警三：数据路径是作者的绝对路径。** `configs/dataset/rp
+          +diff.yaml` 里写死了 `/data/lyuxing/tax3d/rpdiff/data/task_demo
+          +s/`，必须自己改。RPDiff 的示范数据要从 RPDiff 原仓库另行下载。
+      358 +                                                              
+      359 +### 9.4 训练开销：算出来的，不是猜的                          
+      360 +                                                              
+      361 +从配置文件反推实际计算量：                                    
+      362 +                                                              
+      363 +| 配置项 | 值 | 出处 |                                        
+      364 +|---|---|---|                                                 
+      365 +| batch size | 32（验证 16） | `configs/training/rpdiff_tax3dv
+          +2.yaml` |                                                     
+      366 +| epochs | **20000** | 同上 |                                 
+      367 +| 学习率 / 权重衰减 | 1e-4 / 1e-5，grad clip 1.0 | 同上 |     
+      368 +| 验证频率 | 每 100 epoch，WTA 10 次 | 同上 |                 
+      369 +| 点云规模 | 物体 512 + 场景 512（FPS 下采样） | `configs/data
+          +set/rpdiff.yaml` |                                            
+      370 +| 扩散步数 | 训练 100 / 推理 100 | `configs/model/tax3dv2.yaml
+          +` |                                                           
+      371 +| 骨干规模 | DiT **xS**（最小档）+ PointNet++ 编码器 | 同上 | 
+      372 +| GMM 阶段 | 单独训练，1000 epoch，lr 1e-4 | `configs/train_gm
+          +m.yaml` |                                                     
+      373 +| GPU 数 | `gpus: [0]` —— **单卡** | `configs/train.yaml`、`au
+          +tobot.md` |                                                   
+      374 +| dataloader workers | 配置写 32，作者实跑用 16 | `configs/tra
+          +in.yaml` vs `autobot.md` |                                    
+      375 +                                                              
+      376 +几个直接影响预算的推论：                                      
+      377 +                                                              
+      378 +- **单卡就够，多卡没配。** 作者在 CMU autobot 集群上用 singula
+          +rity 跑，命令里是 `CUDA_VISIBLE_DEVICES=0`。这不是一个需要多机
+          +的工作。                                                      
+      379 +- **显存需求不大，时间需求很大。** xS 骨干 + 512 点 + batch 32
+          +，模型本身很小；但 20000 epoch 意味着单个任务要训**若干天**。 
+      380 +- **两阶段要训两次。** GMM 1000 epoch 和扩散 20000 epoch 是分 
+          +开的两条训练命令（论文里明确说全局阶段是独立训练的，见 §3.4 的
+          +训练技巧）。                                                  
+      381 +- **论文有 5 个 RPDiff 任务 + NIST + DEDO。** 没有权重意味着全
+          +表复现 = 5+ 次完整两阶段训练。这是以「GPU-周」而非「GPU-小时」
+          +计的。                                                        
+      382 +                                                              
+      383 +### 9.5 该配什么机器                                          
+      384 +                                                              
+      385 +| 档位 | 配置 | 能做什么 |                                    
+      386 +|---|---|---|                                                 
+      387 +| **能跑起来** | 单卡 12GB（3060 12G / 2080Ti / T4），16GB 内 
+          +存，200GB 硬盘 | 跑通推理、小 batch 调试、读懂代码 |          
+      388 +| **舒服复现（推荐）** | 单卡 **24GB**（3090 / 4090 / A5000） 
+          +，**≥16 核 CPU**，64GB 内存，500GB SSD | 原 batch 32 训练，dat
+          +aloader 不成为瓶颈 |                                          
+      389 +| **复现全表** | 上述配置 × 多台，或一张 A100/H100 排队 | 5+  
+          +任务各自完整训练 |                                            
+      390 +                                                              
+      391 +三点解释：                                                    
+      392 +                                                              
+      393 +- **CPU 核数不是小事。** `num_workers=16~32` 说明点云 FPS 下采
+          +样 + 遮挡增强（`action_plane_occlusion: 0.8`、`anchor_ball_occ
+          +lusion: 0.8`）是在 CPU 上做的。8 核机器会让 GPU 饿着。        
+      394 +- **必须是 NVIDIA 卡。** CUDA 11.8 + PyTorch3D + PyG 编译扩展 
+          +，Apple Silicon 和 AMD 都不现实。                             
+      395 +- **硬盘主要给数据。** RPDiff 的 PyBullet 示范数据集 + 中间缓 
+          +存是大头，模型权重本身很小。                                  
+      396 +                                                              
+      397 +### 9.6 想复现的话，建议的顺序                                
+      398 +                                                              
+      399 +1. 先按 `Dockerfile` 起容器，别手搓环境。                     
+      400 +2. 参照 **TAX3D（2410.19247）仓库**的安装/数据说明补齐本仓库缺
+          +失的文档——两者同源。                                          
+      401 +3. 从 RPDiff 原仓库拿数据，改掉 `configs/dataset/rpdiff.yaml` 
+          +里的绝对路径。                                                
+      402 +4. 先训 GMM（1000 epoch，便宜），确认全局阶段的粗中心合理，再 
+          +启动扩散阶段。                                                
+      403 +5. 先只复现 **一个** RPDiff 任务对齐数字，再考虑铺开。        
+      404 +6. 关注仓库更新——checkpoints 一旦放出来，5 中的成本会塌缩掉一 
+          +个数量级。                                                    
+      405 +                                                              
+      406 +---                                                           
+      407 +                                                              
+      408  ## 附录：符号速查表
+      409  
+      410  | 符号 | 含义 |
+
+● Bash(f=research-wiki/papers/he2026_disentangled_point_diffusion.md; [ -f "$f"
+      ] && sed -n '1,14p' "$f" || find . -name "*disentangled*" | head)
+  ⎿  ---
+     type: paper
+     node_id: paper:he2026_disentangled_point_diffusion
+     … +12 lines (ctrl+o to expand)
+
+● Update(research-wiki/papers/he2026_disentangled_point_diffusion.md)
+  ⎿  Added 1 line, removed 1 line
+       4  title: "Disentangled Point Diffusion for Precise Object Placeme
+          nt"
+       5  authors: ["Lyuxing He", "Eric Cai", "Shobhit Aggarwal", "Jianju
+          n Wang", "David Held"]
+       6  year: 2026
+       7 -venue: "arXiv"                                                 
+       7 +venue: "ICRA 2026"                                             
+       8  external_ids:
+       9    arxiv: "2604.11793"
+      10    doi: null
+
+● 两处都补完了。
+
+  docs/taxdpd_2604.11793_contributions.md（注意：文档实际在 docs/ 而非
+  third_party/，后者只有一个 PDF）
+
+  - 出处改为 ICRA 2026，链接行加上代码仓地址
+  - 新增第九章「开源状态与复现配置」，6 个小节：
+    - 9.1 roadmap 表：代码 ✅ / 安装文档 ❌ / 训练文档 ❌ / 评测文档 ❌ / 权重
+  ❌；并记录了项目页与作者主页信息打架、附录只在 Google Drive 两件事
+    - 9.2 关键发现：pyproject.toml 包名是 non_rigid、配置叫 tax3dv2 —— 这是
+  TAX3D 代码库的 v2，所以 TAX3D 的安装经验可以直接借来补缺失的文档
+    - 9.3 锁死的软件栈表（CUDA 11.8 devel / Py3.9 / torch 2.0.1+cu118 /
+  pytorch3d py39_cu118_pyt201 / PyG 五件套 / pybullet
+  3.2.6），外加三条踩坑预警：gym==0.21.0 需要老 pip、建议直接用
+  Dockerfile、数据路径是作者绝对路径
+    - 9.4 从配置反推的训练开销：GMM 1000 epoch + 扩散 20000 epoch、batch
+  32、512+512 点、100 步扩散、xS DiT、gpus: [0] 单卡
+    - 9.5 三档硬件（12GB 能跑 / 24GB+≥16 核推荐 / 全表复现要
+  GPU-周），并解释了为什么 CPU 核数是真瓶颈
+    - 9.6 六步复现顺序
+
+  literature/related_work.md
+
+  - 表格行 venue：arXiv 2026-04 → ICRA 2026
+  - 头部 Venue caveat 下加一条 2026-07-27 更正说明，写明依据是仓库 README 自述
+  "Official code release for our ICRA 2026 paper"，并声明其余条目仍未核实
+  - Closest Prior Work 第 4 条补上开源状态、TAX3D 同源事实、以及指向新文档的链接
+  - BibTeX 从 @article（arXiv preprint）改为 @inproceedings（ICRA
+  2026），顺带把作者列表里的 others 补成 David Held
+
+  顺手也把 research-wiki/papers/he2026_disentangled_point_diffusion.md 的
+  frontmatter venue 同步成了 ICRA 2026，免得三处不一致。
+
+● Session model claude-opus-5 could not be restored (not a model this 
+  version of Claude Code recognizes) — using claude-opus-4-8 instead.
+
+● Session model claude-opus-5 could not be restored (not a model this 
+  version of Claude Code recognizes) — using claude-opus-4-8 instead.

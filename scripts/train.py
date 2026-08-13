@@ -241,7 +241,10 @@ def main(cfg):
         print("Starting training from scratch.")
         ckpt_file = None
     '''
-    if cfg.checkpoint.run_id:
+    if cfg.training.checkpoint_file:
+        print(f"Attempting to resume training from local checkpoint: {cfg.training.checkpoint_file}")
+        ckpt_file = cfg.training.checkpoint_file
+    elif cfg.checkpoint.run_id:
         print("Attempting to resume training from WandB checkpoint:", cfg.checkpoint.reference)
 
         api = wandb.Api()

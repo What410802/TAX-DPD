@@ -74,16 +74,43 @@ def main(cfg):
     total_probs90 = []
     total_probs50 = []
 
-    # Creating experiment directory.
-    run_id = wandb.util.generate_id(length=10) # For simplicity, using wandb.util.generate_id() as a unique identifier.
-    exp_name = os.path.join(
-        os.path.expanduser(cfg.gmm_log_dir),
-        run_id,
-    )
+    # Resume from a checkpoint, if requested.
+    start_epoch = 0
+    resume_ckpt = cfg.get("resume_ckpt", None)
+    if resume_ckpt is not None:
+        resume_ckpt = os.path.expanduser(resume_ckpt)
+        print(f"Resuming from checkpoint: {resume_ckpt}")
+        state = torch.load(resume_ckpt, map_location=device)
+        # Checkpoints written before resume support was added are bare state_dicts.
+        if "model" in state:
+            model.load_state_dict(state["model"])
+            if "optimizer" in state:
+                optimizer.load_state_dict(state["optimizer"])
+            else:
+                print("WARNING: no optimizer state in checkpoint; AdamW moments restart from zero.")
+            start_epoch = state.get("epoch", cfg.get("resume_epoch", 0))
+        else:
+            model.load_state_dict(state)
+            print("WARNING: legacy checkpoint (model weights only); AdamW moments restart from zero.")
+            start_epoch = cfg.get("resume_epoch", 0)
+        print(f"Resuming at epoch {start_epoch}.")
 
-    if os.path.exists(exp_name):
-        print(f"Experiment directory {exp_name} already exists. Removing it.")
-        shutil.rmtree(exp_name)
+    # Creating experiment directory.
+    if resume_ckpt is not None:
+        # Reuse the run directory the checkpoint came from, so logs stay together.
+        exp_name = os.path.dirname(os.path.dirname(resume_ckpt))
+        run_id = os.path.basename(exp_name)
+        print(f"Reusing experiment directory: {exp_name}")
+    else:
+        run_id = wandb.util.generate_id(length=10) # For simplicity, using wandb.util.generate_id() as a unique identifier.
+        exp_name = os.path.join(
+            os.path.expanduser(cfg.gmm_log_dir),
+            run_id,
+        )
+
+        if os.path.exists(exp_name):
+            print(f"Experiment directory {exp_name} already exists. Removing it.")
+            shutil.rmtree(exp_name)
     os.makedirs(exp_name, exist_ok=True)
     os.makedirs(os.path.join(exp_name, "checkpoints"), exist_ok=True)
     os.makedirs(os.path.join(exp_name, "logs"), exist_ok=True)
@@ -92,20 +119,21 @@ def main(cfg):
     with open(os.path.join(exp_name, "config.yaml"), "w") as f:
         omegaconf.OmegaConf.save(cfg, f)
 
-    # Visualizing initial model.
-    fig, num_probs99, num_probs90, num_probs50 = viz_gmm(model, train_dataset)
-    fig.update_layout(title_text="Epoch 0")
-    fig.write_html(os.path.join(exp_name, "logs", f"epoch_0.html"))
-    total_probs99.append(num_probs99)
-    total_probs90.append(num_probs90)
-    total_probs50.append(num_probs50)
+    # Visualizing initial model. Skipped when resuming, to avoid clobbering epoch_0.html.
+    if start_epoch == 0:
+        fig, num_probs99, num_probs90, num_probs50 = viz_gmm(model, train_dataset)
+        fig.update_layout(title_text="Epoch 0")
+        fig.write_html(os.path.join(exp_name, "logs", f"epoch_0.html"))
+        total_probs99.append(num_probs99)
+        total_probs90.append(num_probs90)
+        total_probs50.append(num_probs50)
 
     # Training loop.
     print(f"Training GMM with run ID: {run_id}")
-    with tqdm(total=num_epochs) as pbar:
+    with tqdm(total=num_epochs, initial=start_epoch) as pbar:
         pbar.set_description("Training")
         
-        for epoch in range(num_epochs):
+        for epoch in range(start_epoch, num_epochs):
             model.train()
             epoch_loss = []
 
@@ -140,7 +168,14 @@ def main(cfg):
                 total_val_losses.append(np.mean(val_loss))
 
                 # Save model checkpoint.
-                torch.save(model.state_dict(), os.path.join(exp_name, "checkpoints", f"epoch_{epoch + 1}.pt"))
+                torch.save(
+                    {
+                        "model": model.state_dict(),
+                        "optimizer": optimizer.state_dict(),
+                        "epoch": epoch + 1,
+                    },
+                    os.path.join(exp_name, "checkpoints", f"epoch_{epoch + 1}.pt"),
+                )
 
                 # Also log visualizations.
                 val_fig, num_probs99, num_probs90, num_probs50 = viz_gmm(model, train_dataset)

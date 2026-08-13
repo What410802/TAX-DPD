@@ -6,6 +6,7 @@ from omegaconf import OmegaConf
 import torch
 import wandb
 import os
+from pytorch3d.transforms import Transform3d
 
 from non_rigid.utils.script_utils import (
     create_model,
@@ -26,13 +27,14 @@ import rpad.visualize_3d.plots as vpl
 @hydra.main(config_path="../configs", config_name="eval_rigid", version_base="1.3")
 def main(cfg):
     task_overrides = HydraConfig.get().overrides.task
-    cfg = load_checkpoint_config_from_wandb(
-        cfg, 
-        task_overrides, 
-        cfg.wandb.entity, 
-        cfg.wandb.project, 
-        cfg.checkpoint.run_id
-    )
+    if str(cfg.checkpoint.reference).startswith(cfg.wandb.entity):
+        cfg = load_checkpoint_config_from_wandb(
+            cfg,
+            task_overrides,
+            cfg.wandb.entity,
+            cfg.wandb.project,
+            cfg.checkpoint.run_id,
+        )
     print(
         json.dumps(
             OmegaConf.to_container(cfg, resolve=True, throw_on_missing=False),
@@ -117,7 +119,13 @@ def main(cfg):
         gmm_model.eval()
 
         gmm_ckpt_path = os.path.join(gmm_exp_path, "checkpoints", f"epoch_{gmm_epoch}.pt")
-        gmm_model.load_state_dict(torch.load(gmm_ckpt_path))
+        gmm_state = torch.load(gmm_ckpt_path, map_location=device)
+        # Checkpoints from train_gmm.py carry {model, optimizer, epoch} so that
+        # a killed run can resume. Older ones are bare state_dicts.
+        if isinstance(gmm_state, dict) and "model" in gmm_state:
+            gmm_model.load_state_dict(gmm_state["model"])
+        else:
+            gmm_model.load_state_dict(gmm_state)
         print(f"Using GMM checkpoint: {gmm_ckpt_path}")
 
     else:
@@ -211,16 +219,32 @@ def main(cfg):
         with torch.no_grad():
             for batch in tqdm(dataloader):
                 # Generate predictions.
-                if gmm_model is not None:
+                if cfg.model.name == "tax3dv2":
+                    pred_batch = batch
+                    wta = model._predict_wta(batch, cfg.inference.num_wta_trials)
+                    bs, num_samples = wta["pred_action"].shape[:2]
+                    pred_point = wta["pred_action"].reshape(bs * num_samples, -1, 3)
+                    T_goal2world_exp = Transform3d(
+                        matrix=expand_pcd(batch["T_goal2world"].to(device), num_samples)
+                    )
+                    T_goal2world = Transform3d(matrix=batch["T_goal2world"].to(device))
+                    pred_point_world = T_goal2world_exp.transform_points(pred_point)
+                    ground_truth_point_world = T_goal2world.transform_points(
+                        batch["pc"].to(device)
+                    )
+                elif gmm_model is not None:
                     # Yucky hack for GMM; need to expand point clouds first for WTA GMM samples.
                     pred_batch = model.update_batch_frames(batch, update_labels=True, gmm_model=gmm_model, num_gmm_trials=cfg.inference.num_gmm_trials)
                     pred_dict = model.predict(pred_batch, cfg.inference.num_wta_trials, progress=True, full_prediction=True)
+                    ground_truth_point_world = pred_batch["pc_world"].to(device)
+                    pred_point_world = pred_dict["point"]["pred_world"]
                 else:
                     pred_batch = model.update_batch_frames(batch, update_labels=True)
                     pred_dict = model.predict(pred_batch, cfg.inference.num_wta_trials, progress=True, full_prediction=True)
+                    ground_truth_point_world = pred_batch["pc_world"].to(device)
+                    pred_point_world = pred_dict["point"]["pred_world"]
 
                 seg = pred_batch["seg"].to(device)
-                ground_truth_point_world = pred_batch["pc_world"].to(device)
 
                 bs = ground_truth_point_world.shape[0]
                 seg = expand_pcd(seg, num_samples)
@@ -228,14 +252,12 @@ def main(cfg):
 
 
                 # pred = pred_dict[self.prediction_type]["pred"]
-                pred_point_world = pred_dict["point"]["pred_world"]
 
                 pred_point_world_clone = pred_point_world.clone()
                 ground_truth_point_world_clone = ground_truth_point_world.clone()
 
                 # computing error metrics
                 seg = seg == 0
-                breakpoint()
                 rmse = flow_rmse(pred_point_world_clone, ground_truth_point_world_clone, mask=True, seg=seg).reshape(bs, num_samples)
                 pred_point_world = pred_point_world.reshape(bs, num_samples, -1, 3)
 

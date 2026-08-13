@@ -10,7 +10,11 @@ import torch.nn.functional as F
 from rpad.pyg.nets import pointnet2 as pnp_bn
 from rpad.pyg.nets.mlp import MLP, MLPParams
 from torch_geometric.data import Data
-from torch_geometric.nn import PointConv, fps, global_max_pool, knn_interpolate, radius
+try:
+    from torch_geometric.nn import PointConv, fps, global_max_pool, knn_interpolate, radius
+except ImportError:
+    # torch_geometric >= 2.3 renamed PointConv → PointNetConv
+    from torch_geometric.nn import PointNetConv as PointConv, fps, global_max_pool, knn_interpolate, radius
 
 
 @dataclass
