@@ -305,42 +305,136 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
         return batch["pc"].to(self.device).permute(0, 2, 1)
 
     @torch.no_grad()
+    def sample_candidates(
+        self,
+        pc_action: torch.Tensor,
+        pc_anchor: torch.Tensor,
+        num_trials: int = 1,
+        seed: Optional[int] = None,
+    ) -> torch.Tensor:
+        """Sample goal point clouds without reading a ground-truth goal.
+
+        This is the deployment-facing seam for the reconstructed fixed-frame
+        TAX-DPD module.  Each candidate owns an independent deterministic random
+        stream when ``seed`` is provided, so asking for more candidates cannot
+        change an earlier candidate.  The method intentionally iterates the
+        progressive sampler and retains only its final tensors; the historical
+        ``p_sample_loop`` stores every diffusion step and ignores caller-provided
+        initial noise.
+
+        Args:
+            pc_action: observed placed-object points with shape ``[B, N, 3]``.
+            pc_anchor: observed support points with shape ``[B, M, 3]``.
+            num_trials: number of complete candidate goal point clouds.
+            seed: optional base seed; candidate ``i`` uses ``seed + i``.
+
+        Returns:
+            Tensor with shape ``[B, K, N, 3]`` in the same centered scene frame
+            as the inputs.
+        """
+
+        if isinstance(num_trials, bool) or not isinstance(num_trials, int) or num_trials <= 0:
+            raise ValueError("num_trials must be a positive integer")
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int) or seed < 0):
+            raise ValueError("seed must be a non-negative integer or None")
+        for name, points in (("pc_action", pc_action), ("pc_anchor", pc_anchor)):
+            if not isinstance(points, torch.Tensor):
+                raise TypeError(f"{name} must be a torch.Tensor")
+            if points.ndim != 3 or points.shape[-1] != 3:
+                raise ValueError(f"{name} must have shape [B, N, 3]")
+            if points.shape[0] <= 0 or points.shape[1] < 4:
+                raise ValueError(f"{name} must contain a non-empty batch and at least four points")
+            if not torch.isfinite(points).all():
+                raise ValueError(f"{name} contains non-finite values")
+        if pc_action.shape[0] != pc_anchor.shape[0]:
+            raise ValueError("pc_action and pc_anchor batch sizes must match")
+
+        device = self.device
+        action = pc_action.to(device)
+        anchor = pc_anchor.to(device)
+        batch_size, sample_size = action.shape[:2]
+        model_kwargs = {
+            "y": anchor.permute(0, 2, 1),
+            "x0": action.permute(0, 2, 1),
+        }
+        cuda_devices = []
+        if device.type == "cuda":
+            cuda_devices = [
+                torch.cuda.current_device() if device.index is None else int(device.index)
+            ]
+
+        was_training = self.training
+        self.eval()
+        candidates = []
+        try:
+            for trial_index in range(num_trials):
+                candidate_seed = None if seed is None else seed + trial_index
+                with torch.random.fork_rng(devices=cuda_devices, enabled=candidate_seed is not None):
+                    if candidate_seed is not None:
+                        if device.type == "cuda":
+                            with torch.cuda.device(cuda_devices[0]):
+                                torch.cuda.manual_seed(candidate_seed)
+                        else:
+                            torch.manual_seed(candidate_seed)
+                    noise_r = (
+                        torch.randn(batch_size, 3, 1, device=device) * self.noise_scale
+                    )
+                    noise_s = (
+                        torch.randn(batch_size, 3, sample_size, device=device)
+                        * self.noise_scale
+                    )
+                    if bool(self.model_cfg.zero_shape):
+                        noise_s = noise_s - noise_s.mean(dim=2, keepdim=True)
+
+                    final = None
+                    for output in self.diffusion.p_sample_loop_progressive(
+                        self.network,
+                        noise_r.shape,
+                        noise_s.shape,
+                        noise_r=noise_r,
+                        noise_s=noise_s,
+                        clip_denoised=False,
+                        model_kwargs=model_kwargs,
+                        progress=False,
+                        device=device,
+                    ):
+                        final = output
+                    if final is None:
+                        raise RuntimeError("diffusion sampler returned no timesteps")
+                    candidate = (final["sample_r"] + final["sample_s"]).permute(0, 2, 1)
+                    if candidate.shape != action.shape or not torch.isfinite(candidate).all():
+                        raise RuntimeError(
+                            "diffusion sampler returned an invalid candidate with shape "
+                            f"{tuple(candidate.shape)}"
+                        )
+                    candidates.append(candidate)
+        finally:
+            self.train(was_training)
+        return torch.stack(candidates, dim=1)
+
+    @torch.no_grad()
     def _predict_wta(self, batch: Dict, num_trials: Optional[int] = None) -> Dict:
         n = num_trials if num_trials is not None else self.num_wta_trials
         gt = batch["pc"].to(self.device)          # [B, N, 3]
         bs = gt.shape[0]
-        sample_size = gt.shape[1]
-
-        pc_action = expand_pcd(batch["pc_action"].to(self.device), n)  # [B*n, N, 3]
-        pc_anchor = expand_pcd(batch["pc_anchor"].to(self.device), n)  # [B*n, M, 3]
-        gt_exp    = expand_pcd(gt, n)                                   # [B*n, N, 3]
-
-        model_kwargs = {
-            "y":  pc_anchor.permute(0, 2, 1),   # [B*n, 3, M]
-            "x0": pc_action.permute(0, 2, 1),   # [B*n, 3, N]
-        }
-
-        noise_r = torch.randn(bs * n, 3, 1,           device=self.device) * self.noise_scale
-        noise_s = torch.randn(bs * n, 3, sample_size, device=self.device) * self.noise_scale
-
-        # SpacedDiffusionDDRDSeparate.p_sample_loop returns (final_dict, results)
-        # final_dict = {"sample_r": [B*n, 3, 1], "sample_s": [B*n, 3, N]}
-        final_dict, _ = self.diffusion.p_sample_loop(
-            self.network,
-            noise_r.shape,
-            noise_s.shape,
-            noise_r=noise_r,
-            noise_s=noise_s,
-            clip_denoised=False,
-            model_kwargs=model_kwargs,
-            progress=False,
-            device=self.device,
+        pred_action = self.sample_candidates(
+            batch["pc_action"],
+            batch["pc_anchor"],
+            num_trials=n,
         )
-        pred_action = (final_dict["sample_r"] + final_dict["sample_s"]).permute(0, 2, 1)
-
-        rmse    = flow_rmse(pred_action,    gt_exp, mask=False, seg=None).reshape(bs, n)
-        cos_sim = flow_cos_sim(pred_action, gt_exp, mask=False, seg=None).reshape(bs, n)
-        pred_action = pred_action.reshape(bs, n, -1, 3)
+        gt_exp = gt[:, None].expand_as(pred_action)
+        rmse = flow_rmse(
+            pred_action.reshape(bs * n, -1, 3),
+            gt_exp.reshape(bs * n, -1, 3),
+            mask=False,
+            seg=None,
+        ).reshape(bs, n)
+        cos_sim = flow_cos_sim(
+            pred_action.reshape(bs * n, -1, 3),
+            gt_exp.reshape(bs * n, -1, 3),
+            mask=False,
+            seg=None,
+        ).reshape(bs, n)
         winner  = torch.argmin(rmse, dim=-1)
 
         return {

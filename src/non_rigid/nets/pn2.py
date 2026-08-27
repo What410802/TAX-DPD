@@ -7,7 +7,6 @@ from typing import Literal
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from rpad.pyg.nets import pointnet2 as pnp_bn
 from rpad.pyg.nets.mlp import MLP, MLPParams
 from torch_geometric.data import Data
 try:
@@ -258,6 +257,26 @@ class PN2DenseParams:
     out_act: Literal["none", "softmax", "relu"] = "none"
 
 
+def _batch_norm_dense_params() -> PN2DenseParams:
+    """Reproduce rpad-pyg's batch-normalized dense defaults locally.
+
+    Importing ``rpad.pyg.nets.pointnet2`` only to obtain this dataclass fails on
+    modern PyG releases because ``PointConv`` was renamed to ``PointNetConv``.
+    The live TAX3Dv2 encoder uses :class:`PN2DenseParams` directly; this helper
+    preserves the separate latent-encoding class's historical defaults without
+    requiring a mutable site-packages patch.
+    """
+
+    return PN2DenseParams(
+        sa1=SAParams(0.2, 0.2, MLPParams((64, 64), out_act="none"), 64),
+        sa2=SAParams(0.25, 0.4, MLPParams((128, 128), out_act="none"), 64),
+        gsa=GlobalSAParams(MLPParams((256, 512), out_act="none")),
+        fp3=FPParams(MLPParams((256,), out_act="none"), k=1),
+        fp2=FPParams(MLPParams((256,), out_act="none"), k=3),
+        fp1=FPParams(MLPParams((128, 128), out_act="none"), k=3),
+    )
+
+
 class PN2Dense(nn.Module):
     def __init__(
         self,
@@ -331,7 +350,7 @@ class PN2DenseLatentEncodingEverywhere(nn.Module):
         history_embed_dim,
         in_channels: int = 0,
         out_channels: int = 3,
-        p: pnp_bn.PN2DenseParams = pnp_bn.PN2DenseParams(),  # With Batch Norm
+        p: PN2DenseParams = _batch_norm_dense_params(),  # With Batch Norm
     ):
         super().__init__()
 

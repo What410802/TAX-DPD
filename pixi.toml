@@ -11,6 +11,7 @@ platforms = ["linux-64"]
 [tasks]
 # Install packages that can't go through pixi's PyPI resolver:
 #   • pyg extensions  → custom find-links wheel page
+#   • rpad-pyg         → pinned Git revision; project install below uses --no-deps
 #   • gym 0.21.0      → needs wheel==0.38.0 to build
 #   • pytorch3d       → source build (run once manually)
 #   • project itself  → editable install
@@ -19,6 +20,8 @@ pip install \
   pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv \
   -f https://data.pyg.org/whl/torch-2.7.0+cu128.html \
   --no-deps && \
+pip install --no-deps \
+  "git+https://github.com/r-pad/pyg_libs.git@990a90b509d86e2e083662e37ea7fd25e1518171" && \
 pip install -e third_party/dedo --no-deps && \
 pip install -e "third_party/3D-Diffusion-Policy/3D-Diffusion-Policy" --no-deps && \
 pip install -e . --no-deps
@@ -31,6 +34,9 @@ install-gym = { cmd = "echo 'gym 0.21.0 skipped - install via conda if needed'",
 train-gmm = { cmd = "python scripts/train_gmm.py", cwd = "." }
 train     = { cmd = "python scripts/train.py",     cwd = "." }
 eval      = { cmd = "python scripts/eval.py",      cwd = "." }
+placegen-one-step = { cmd = "python scripts/placegen_one_step.py", cwd = "." }
+placegen-predict-pose = { cmd = "python scripts/placegen_predict_pose.py", cwd = "." }
+test-placegen-smoke = { cmd = "python -m pytest -q tests/test_placegen_artifact.py tests/test_rigid_dataset_placegen_center.py tests/test_rigid_transform.py tests/test_state_digest.py tests/test_tax3d_v2_sampling.py", cwd = "." }
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Conda dependencies (base layer)
@@ -88,3 +94,4 @@ pybullet    = "==3.2.6"
 plotly      = ">=5.0"
 gif         = "*"
 flask       = "*"
+pytest      = "==7.3.2"

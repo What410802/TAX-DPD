@@ -229,7 +229,21 @@ class RPDiffDataset(data.Dataset):
         goal_action_pc = T.transform_points(goal_action_pc)
 
         # Center point clouds in scene frame.
-        scene_center = torch.cat([action_pc, anchor_pc], dim=0).mean(axis=0)
+        if "placegen_scene_center_world" in demo.files:
+            center_value = np.asarray(demo["placegen_scene_center_world"])
+            if center_value.shape != (3,) or not np.isfinite(center_value).all():
+                raise ValueError(
+                    "placegen_scene_center_world must be a finite [3] vector"
+                )
+            scene_center = torch.as_tensor(
+                center_value,
+                dtype=action_pc.dtype,
+                device=action_pc.device,
+            )
+            if self.dataset_cfg.scene_transform_type != "identity":
+                scene_center = T.transform_points(scene_center.unsqueeze(0)).squeeze(0)
+        else:
+            scene_center = torch.cat([action_pc, anchor_pc], dim=0).mean(axis=0)
         goal_action_pc = goal_action_pc - scene_center
         anchor_pc = anchor_pc - scene_center
         action_pc = action_pc - scene_center
