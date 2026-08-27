@@ -36,7 +36,10 @@ train     = { cmd = "python scripts/train.py",     cwd = "." }
 eval      = { cmd = "python scripts/eval.py",      cwd = "." }
 placegen-one-step = { cmd = "python scripts/placegen_one_step.py", cwd = "." }
 placegen-predict-pose = { cmd = "python scripts/placegen_predict_pose.py", cwd = "." }
-test-placegen-smoke = { cmd = "python -m pytest -q tests/test_placegen_artifact.py tests/test_rigid_dataset_placegen_center.py tests/test_rigid_transform.py tests/test_state_digest.py tests/test_tax3d_v2_sampling.py", cwd = "." }
+placegen-train-grouped = { cmd = "python scripts/placegen_train_grouped.py", cwd = "." }
+placegen-predict-grouped = { cmd = "python scripts/placegen_predict_grouped.py", cwd = "." }
+placegen-predict-request = { cmd = "python scripts/placegen_predict_request.py", cwd = "." }
+test-placegen-smoke = { cmd = "python -m pytest -q tests/test_placegen_artifact.py tests/test_placegen_grouped.py tests/test_rigid_dataset_placegen_center.py tests/test_rigid_transform.py tests/test_state_digest.py tests/test_tax3d_v2_sampling.py", cwd = "." }
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Conda dependencies (base layer)
