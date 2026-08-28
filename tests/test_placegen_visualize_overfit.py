@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 
 from scripts.placegen_visualize_overfit import (
+    OPTIONAL_REPORT_FIELDS,
     REPORT_FIELDS,
     REPORT_SCHEMA,
     SUMMARY_SCHEMA,
@@ -92,10 +93,10 @@ def _write_fixture(
         np.linalg.norm(predicted_pose[:3, 3] - target_pose[:3, 3]) * 1000
     )
     rotation_error = 60.0
-    # This fixture intentionally models the original 0.1 producer, before the
-    # optional learned-sigma diagnostic field was added.
+    # This fixture intentionally models the original producer, before the
+    # optional diagnostic metadata fields were added.
     report = {
-        field: None for field in REPORT_FIELDS if field != "learned_sigma_loss_override"
+        field: None for field in REPORT_FIELDS if field not in OPTIONAL_REPORT_FIELDS
     }
     report.update(
         {
@@ -140,6 +141,173 @@ def test_world_reconstruction_uses_world_from_object_column_convention(
     np.testing.assert_allclose(
         data.predicted_child_world, expected["predicted"], atol=1e-7
     )
+
+
+def _add_rotation_metadata(report: dict[str, object]) -> None:
+    report.update(
+        {
+            "diagnostic_flags": {
+                "disable_rotation_noise": True,
+                "rescale_learned_sigmas": True,
+            },
+            "diagnostic_actual_state": {
+                "config_learn_sigma": True,
+                "network_learn_sigma": True,
+                "diffusion_model_var_type": "LEARNED_RANGE",
+                "diffusion_loss_type": "RESCALED_MSE",
+                "diffusion_rotation_noise_scale": 0.0,
+            },
+            "learned_sigma_loss_override": {
+                "enabled": True,
+                "loss_type_before": "MSE",
+                "loss_type_after": "RESCALED_MSE",
+                "vb_scale": 0.1,
+            },
+            "rotation_noise_override": {
+                "enabled": True,
+                "changed": True,
+                "rotation_noise_scale_before": 45.0,
+                "rotation_noise_scale_after": 0.0,
+            },
+        }
+    )
+
+
+def test_optional_rotation_metadata_is_accepted_and_cross_checked(
+    tmp_path: Path,
+) -> None:
+    report_path, _, report, _ = _write_fixture(tmp_path)
+    _add_rotation_metadata(report)
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    data = load_visualization_data(report_path)
+
+    assert data.sample_id == "rack-plate-000000"
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "match"),
+    [
+        (
+            "diagnostic_flags",
+            {"disable_rotation_noise": True},
+            "fields must match schema exactly",
+        ),
+        (
+            "diagnostic_flags",
+            {
+                "disable_rotation_noise": True,
+                "rescale_learned_sigmas": 1,
+            },
+            "must be boolean",
+        ),
+        (
+            "diagnostic_actual_state",
+            {
+                "config_learn_sigma": True,
+                "network_learn_sigma": True,
+                "diffusion_model_var_type": "LEARNED_RANGE",
+                "diffusion_loss_type": "RESCALED_MSE",
+                "diffusion_rotation_noise_scale": "0",
+            },
+            "must be a finite number",
+        ),
+        (
+            "diagnostic_actual_state",
+            {
+                "config_learn_sigma": True,
+                "network_learn_sigma": True,
+                "diffusion_model_var_type": "LEARNED_RANGE",
+                "diffusion_loss_type": "RESCALED_MSE",
+                "diffusion_rotation_noise_scale": 0.0,
+                "unexpected": False,
+            },
+            "fields must match schema exactly",
+        ),
+        (
+            "rotation_noise_override",
+            {
+                "enabled": True,
+                "changed": False,
+                "rotation_noise_scale_before": 45.0,
+                "rotation_noise_scale_after": 0.0,
+            },
+            "changed disagrees",
+        ),
+        (
+            "rotation_noise_override",
+            {
+                "enabled": True,
+                "changed": True,
+                "rotation_noise_scale_before": 45.0,
+                "rotation_noise_scale_after": 0.0,
+                "unexpected": 0,
+            },
+            "fields must match schema exactly",
+        ),
+    ],
+)
+def test_optional_rotation_metadata_is_strict(
+    tmp_path: Path,
+    field: str,
+    value: object,
+    match: str,
+) -> None:
+    report_path, _, report, _ = _write_fixture(tmp_path)
+    _add_rotation_metadata(report)
+    report[field] = value
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    with pytest.raises((TypeError, ValueError), match=match):
+        load_visualization_data(report_path)
+
+
+def test_optional_rotation_metadata_rejects_cross_field_scale_mismatch(
+    tmp_path: Path,
+) -> None:
+    report_path, _, report, _ = _write_fixture(tmp_path)
+    _add_rotation_metadata(report)
+    state = report["diagnostic_actual_state"]
+    assert isinstance(state, dict)
+    state["diffusion_rotation_noise_scale"] = 45.0
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="reports a non-zero scale"):
+        load_visualization_data(report_path)
+
+
+def test_optional_rotation_metadata_rejects_flag_and_override_mismatch(
+    tmp_path: Path,
+) -> None:
+    report_path, _, report, _ = _write_fixture(tmp_path)
+    _add_rotation_metadata(report)
+    flags = report["diagnostic_flags"]
+    assert isinstance(flags, dict)
+    flags["disable_rotation_noise"] = False
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="disagrees with rotation_noise_override"):
+        load_visualization_data(report_path)
+
+
+def test_optional_rotation_metadata_rejects_loss_type_mismatch(
+    tmp_path: Path,
+) -> None:
+    report_path, _, report, _ = _write_fixture(tmp_path)
+    _add_rotation_metadata(report)
+    report["learned_sigma_loss_override"] = {
+        "enabled": True,
+        "loss_type_before": "MSE",
+        "loss_type_after": "RESCALED_MSE",
+        "vb_scale": 0.1,
+    }
+    state = report["diagnostic_actual_state"]
+    assert isinstance(state, dict)
+    state["diffusion_loss_type"] = "MSE"
+    report_path.write_text(json.dumps(report), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="loss type disagrees"):
+        load_visualization_data(report_path)
 
 
 @pytest.mark.parametrize(

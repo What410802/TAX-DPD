@@ -16,7 +16,6 @@ import numpy as np
 
 from non_rigid.utils.placegen_artifact import sha256_file
 
-
 REPORT_SCHEMA = "placegen.taxdpd-one-sample-overfit-report/0.1"
 SUMMARY_SCHEMA = "placegen.taxdpd-overfit-visualization-summary/0.1"
 TRAINING_NPZ_FIELDS = frozenset(
@@ -33,6 +32,8 @@ REPORT_FIELDS = frozenset(
     {
         "candidate_count",
         "candidate_index",
+        "diagnostic_actual_state",
+        "diagnostic_flags",
         "device",
         "diagnostic_scope",
         "final_model_state_sha256",
@@ -56,6 +57,7 @@ REPORT_FIELDS = frozenset(
         "predicted_kabsch_fit_rmse_m",
         "predicted_world_from_object",
         "quality_claim",
+        "rotation_noise_override",
         "sample_id",
         "sample_seed",
         "sampled_coordinate_boundaries",
@@ -78,8 +80,33 @@ REPORT_FIELDS = frozenset(
         "world_translation_error_mm",
     }
 )
-OPTIONAL_REPORT_FIELDS = frozenset({"learned_sigma_loss_override"})
+OPTIONAL_REPORT_FIELDS = frozenset(
+    {
+        "diagnostic_actual_state",
+        "diagnostic_flags",
+        "learned_sigma_loss_override",
+        "rotation_noise_override",
+    }
+)
 REQUIRED_REPORT_FIELDS = REPORT_FIELDS.difference(OPTIONAL_REPORT_FIELDS)
+DIAGNOSTIC_FLAG_FIELDS = frozenset({"disable_rotation_noise", "rescale_learned_sigmas"})
+DIAGNOSTIC_ACTUAL_STATE_FIELDS = frozenset(
+    {
+        "config_learn_sigma",
+        "diffusion_loss_type",
+        "diffusion_model_var_type",
+        "diffusion_rotation_noise_scale",
+        "network_learn_sigma",
+    }
+)
+ROTATION_NOISE_OVERRIDE_FIELDS = frozenset(
+    {
+        "changed",
+        "enabled",
+        "rotation_noise_scale_after",
+        "rotation_noise_scale_before",
+    }
+)
 COLOR_SEMANTICS = {
     "rack_parent": "#5B6573 (gray)",
     "source_child": "#1976D2 (blue)",
@@ -170,6 +197,22 @@ def _finite_float(value: Any, name: str, *, nonnegative: bool = False) -> float:
     if not math.isfinite(result) or (nonnegative and result < 0.0):
         raise ValueError(f"{name} must be a finite non-negative number")
     return result
+
+
+def _finite_nonnegative_or_false(value: Any, name: str) -> bool | float:
+    """Validate a diffusion scale, preserving the config's native ``False``."""
+
+    if value is False:
+        return False
+    if isinstance(value, bool):
+        raise TypeError(f"{name} must be False or a finite non-negative number")
+    return _finite_float(value, name, nonnegative=True)
+
+
+def _scale_float(value: bool | float) -> float:
+    """Return a numeric value for comparing a scale that may be ``False``."""
+
+    return 0.0 if value is False else float(value)
 
 
 def _se3(value: Any, name: str) -> np.ndarray:
@@ -265,9 +308,10 @@ def _load_report(path: Path | str) -> tuple[Path, Mapping[str, Any]]:
         )
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError("diagnostic report must be valid UTF-8 JSON") from error
-    # The first 0.1 reports predate the harness-only learned-sigma probe and do
-    # not carry that optional field.  Keep the top-level schema closed while
-    # accepting both producer revisions; all other additions remain errors.
+    # Early 0.1 reports predate the optional learned-sigma and rotation-noise
+    # diagnostics.  Keep the top-level schema closed while accepting reports
+    # with or without those explicitly listed fields; all other additions
+    # remain errors.
     report_fields = frozenset(report)
     missing = REQUIRED_REPORT_FIELDS.difference(report_fields)
     unexpected = report_fields.difference(REPORT_FIELDS)
@@ -300,6 +344,116 @@ def _load_report(path: Path | str) -> tuple[Path, Mapping[str, Any]]:
             "report.learned_sigma_loss_override.vb_scale",
             nonnegative=True,
         )
+    if "diagnostic_flags" in report:
+        flags = _mapping(report["diagnostic_flags"], "report.diagnostic_flags")
+        _exact_fields(flags, DIAGNOSTIC_FLAG_FIELDS, "report.diagnostic_flags")
+        for key in DIAGNOSTIC_FLAG_FIELDS:
+            if not isinstance(flags[key], bool):
+                raise TypeError(f"report.diagnostic_flags.{key} must be boolean")
+        if "learned_sigma_loss_override" in report:
+            learned_override = _mapping(
+                report["learned_sigma_loss_override"],
+                "report.learned_sigma_loss_override",
+            )
+            if flags["rescale_learned_sigmas"] != learned_override["enabled"]:
+                raise ValueError(
+                    "report diagnostic_flags.rescale_learned_sigmas disagrees with "
+                    "learned_sigma_loss_override.enabled"
+                )
+    if "diagnostic_actual_state" in report:
+        state = _mapping(
+            report["diagnostic_actual_state"],
+            "report.diagnostic_actual_state",
+        )
+        _exact_fields(
+            state,
+            DIAGNOSTIC_ACTUAL_STATE_FIELDS,
+            "report.diagnostic_actual_state",
+        )
+        for key in ("config_learn_sigma", "network_learn_sigma"):
+            if not isinstance(state[key], bool):
+                raise TypeError(f"report.diagnostic_actual_state.{key} must be boolean")
+        if state["config_learn_sigma"] != state["network_learn_sigma"]:
+            raise ValueError(
+                "report.diagnostic_actual_state config/network learn_sigma values "
+                "disagree"
+            )
+        for key in ("diffusion_loss_type", "diffusion_model_var_type"):
+            if not isinstance(state[key], str) or not state[key]:
+                raise ValueError(
+                    f"report.diagnostic_actual_state.{key} must be a non-empty string"
+                )
+        actual_scale = _finite_nonnegative_or_false(
+            state["diffusion_rotation_noise_scale"],
+            "report.diagnostic_actual_state.diffusion_rotation_noise_scale",
+        )
+        if "diagnostic_flags" in report:
+            flags = report["diagnostic_flags"]
+            if flags["disable_rotation_noise"] and _scale_float(actual_scale) != 0.0:
+                raise ValueError(
+                    "report diagnostic flags claim rotation noise is disabled, "
+                    "but diagnostic_actual_state reports a non-zero scale"
+                )
+        if "learned_sigma_loss_override" in report:
+            learned_override = report["learned_sigma_loss_override"]
+            if state["diffusion_loss_type"] != learned_override["loss_type_after"]:
+                raise ValueError(
+                    "report diagnostic_actual_state loss type disagrees with "
+                    "learned_sigma_loss_override"
+                )
+    if "rotation_noise_override" in report:
+        override = _mapping(
+            report["rotation_noise_override"],
+            "report.rotation_noise_override",
+        )
+        _exact_fields(
+            override,
+            ROTATION_NOISE_OVERRIDE_FIELDS,
+            "report.rotation_noise_override",
+        )
+        for key in ("enabled", "changed"):
+            if not isinstance(override[key], bool):
+                raise TypeError(f"report.rotation_noise_override.{key} must be boolean")
+        before = _finite_nonnegative_or_false(
+            override["rotation_noise_scale_before"],
+            "report.rotation_noise_override.rotation_noise_scale_before",
+        )
+        after = _finite_nonnegative_or_false(
+            override["rotation_noise_scale_after"],
+            "report.rotation_noise_override.rotation_noise_scale_after",
+        )
+        expected_changed = bool(override["enabled"] and _scale_float(before) != 0.0)
+        if override["changed"] != expected_changed:
+            raise ValueError(
+                "report.rotation_noise_override.changed disagrees with enabled "
+                "and the before scale"
+            )
+        if override["enabled"] and _scale_float(after) != 0.0:
+            raise ValueError(
+                "report.rotation_noise_override must end at zero when enabled"
+            )
+        if not override["enabled"] and _scale_float(before) != _scale_float(after):
+            raise ValueError(
+                "report.rotation_noise_override changed a scale while disabled"
+            )
+        if "diagnostic_flags" in report:
+            flags = report["diagnostic_flags"]
+            if flags["disable_rotation_noise"] != override["enabled"]:
+                raise ValueError(
+                    "report diagnostic_flags.disable_rotation_noise disagrees with "
+                    "rotation_noise_override.enabled"
+                )
+        if "diagnostic_actual_state" in report:
+            state = report["diagnostic_actual_state"]
+            actual = _finite_nonnegative_or_false(
+                state["diffusion_rotation_noise_scale"],
+                "report.diagnostic_actual_state.diffusion_rotation_noise_scale",
+            )
+            if _scale_float(actual) != _scale_float(after):
+                raise ValueError(
+                    "report diagnostic_actual_state scale disagrees with "
+                    "rotation_noise_override"
+                )
     if report.get("schema") != REPORT_SCHEMA:
         raise ValueError(
             f"unsupported diagnostic report schema: {report.get('schema')!r}"

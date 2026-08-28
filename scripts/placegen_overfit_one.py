@@ -61,6 +61,119 @@ def learned_sigma_loss_override(
     }
 
 
+def rotation_noise_override(
+    enabled: bool,
+    *,
+    original_scale: Any,
+) -> dict[str, Any]:
+    """Describe a harness-only rotation-noise scale override.
+
+    The override is applied to the already-created diagnostic diffusion
+    instance, never to the loaded model YAML.  ``False`` is the native config
+    spelling for an already-disabled scale; finite non-negative numbers are
+    accepted as degree scales.  Invalid values fail closed instead of being
+    coerced by truthiness.
+    """
+
+    if not isinstance(enabled, bool):
+        raise TypeError("disable_rotation_noise must be a boolean")
+    if isinstance(original_scale, bool):
+        if original_scale is True:
+            raise ValueError(
+                "diff_rotation_noise_scale must be False or a finite "
+                "non-negative number"
+            )
+        scale_before: bool | float = False
+        numeric_before = 0.0
+    elif isinstance(original_scale, (int, float)):
+        numeric_before = float(original_scale)
+        if not math.isfinite(numeric_before) or numeric_before < 0.0:
+            raise ValueError(
+                "diff_rotation_noise_scale must be False or a finite "
+                "non-negative number"
+            )
+        scale_before = numeric_before
+    else:
+        raise TypeError(
+            "diff_rotation_noise_scale must be False or a finite non-negative number"
+        )
+
+    scale_after: bool | float = 0.0 if enabled else scale_before
+    return {
+        "enabled": enabled,
+        "rotation_noise_scale_before": scale_before,
+        "rotation_noise_scale_after": scale_after,
+        "changed": bool(enabled and numeric_before != 0.0),
+    }
+
+
+def diagnostic_flag_state(
+    *, disable_rotation_noise: Any, rescale_learned_sigmas: Any
+) -> dict[str, bool]:
+    """Normalize and validate the two supported diagnostic CLI switches."""
+
+    if not isinstance(disable_rotation_noise, bool):
+        raise TypeError("disable_rotation_noise must be a boolean")
+    if not isinstance(rescale_learned_sigmas, bool):
+        raise TypeError("rescale_learned_sigmas must be a boolean")
+    return {
+        "disable_rotation_noise": disable_rotation_noise,
+        "rescale_learned_sigmas": rescale_learned_sigmas,
+    }
+
+
+def apply_rotation_noise_override(
+    diffusion: Any, override: Mapping[str, Any]
+) -> bool | float:
+    """Apply a validated rotation override to one diagnostic instance.
+
+    Keeping this assignment behind a tiny seam makes the scope explicit and
+    testable: callers pass the instantiated diffusion object, never the shared
+    OmegaConf model config.  The postcondition check is fail-closed if a future
+    diffusion implementation renames or ignores the field.
+    """
+
+    if not isinstance(override, Mapping):
+        raise TypeError("rotation override must be a mapping")
+    if not isinstance(override.get("enabled"), bool):
+        raise TypeError("rotation override enabled must be a boolean")
+    if "rotation_noise_scale_after" not in override:
+        raise ValueError("rotation override is missing rotation_noise_scale_after")
+    expected = override["rotation_noise_scale_after"]
+    if isinstance(expected, bool):
+        if expected is True:
+            raise TypeError(
+                "rotation override rotation_noise_scale_after must be numeric"
+            )
+        expected_float = 0.0
+    elif isinstance(expected, (int, float)):
+        expected_float = float(expected)
+    else:
+        raise TypeError("rotation override rotation_noise_scale_after must be numeric")
+    if not math.isfinite(expected_float) or expected_float < 0.0:
+        raise ValueError(
+            "rotation override rotation_noise_scale_after must be finite "
+            "and non-negative"
+        )
+    if override["enabled"]:
+        # Instance-local mutation only; this cannot modify the source YAML.
+        diffusion.rotation_noise_scale = 0.0
+    actual = getattr(diffusion, "rotation_noise_scale", None)
+    if isinstance(actual, bool):
+        actual_float = 0.0 if actual is False else math.nan
+    elif isinstance(actual, (int, float)):
+        actual_float = float(actual)
+    else:
+        raise TypeError("diagnostic diffusion has no numeric rotation-noise scale")
+    if not math.isfinite(actual_float) or actual_float < 0.0:
+        raise RuntimeError("diagnostic diffusion rotation-noise scale is invalid")
+    if actual_float != expected_float:
+        raise RuntimeError(
+            "diagnostic rotation-noise override did not reach the requested state"
+        )
+    return actual
+
+
 def evaluate_overfit_gate(metrics: Mapping[str, Any], *, steps: int) -> dict[str, Any]:
     """Apply the pre-registered one-sample gate without importing ML packages."""
 
@@ -304,6 +417,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         }
     )
 
+    # Validate the harness-only rotation switch before opening the dataset or
+    # constructing a network.  The loaded OmegaConf model remains untouched.
+    diagnostic_flags = diagnostic_flag_state(
+        disable_rotation_noise=getattr(args, "disable_rotation_noise", False),
+        rescale_learned_sigmas=getattr(args, "rescale_learned_sigmas", False),
+    )
+    rotation_override = rotation_noise_override(
+        diagnostic_flags["disable_rotation_noise"],
+        original_scale=cfg.model.diff_rotation_noise_scale,
+    )
+
     training_npz = (
         data_root / args.task_name / args.task_type / f"{artifact.sample_id}.npz"
     )
@@ -364,8 +488,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         for name, value in batch.items()
     }
     module = TAX3Dv2FixedFrameModule(TAX3Dv2Network(cfg.model), cfg).to(device)
+    actual_rotation_scale = apply_rotation_noise_override(
+        module.diffusion, rotation_override
+    )
     loss_override = learned_sigma_loss_override(
-        args.rescale_learned_sigmas,
+        diagnostic_flags["rescale_learned_sigmas"],
         learn_sigma=bool(cfg.model.learn_sigma),
         original_loss_type=module.diffusion.loss_type.name,
         diffusion_steps=int(module.diff_train_steps),
@@ -556,7 +683,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_index": 0,
         "candidate_count": 1,
         "sampling_only_after_final_step": True,
+        "diagnostic_flags": diagnostic_flags,
+        "diagnostic_actual_state": {
+            "config_learn_sigma": bool(cfg.model.learn_sigma),
+            "network_learn_sigma": bool(module.network.dit.learn_sigma),
+            "diffusion_model_var_type": module.diffusion.model_var_type.name,
+            "diffusion_loss_type": module.diffusion.loss_type.name,
+            "diffusion_rotation_noise_scale": actual_rotation_scale,
+        },
         "learned_sigma_loss_override": loss_override,
+        "rotation_noise_override": rotation_override,
         "target_decomposition": target_decomposition,
         "fixed_loss_probes": {
             "timesteps": list(PROBE_TIMESTEPS),
@@ -638,6 +774,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--require-pass", action="store_true")
     parser.add_argument("--rescale-learned-sigmas", action="store_true")
+    parser.add_argument(
+        "--disable-rotation-noise",
+        action="store_true",
+        help="Disable shape rotation noise on this diagnostic diffusion instance only.",
+    )
     return parser
 
 

@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from scripts.placegen_overfit_one import (
     _atomic_json,
+    apply_rotation_noise_override,
     build_parser,
+    diagnostic_flag_state,
     evaluate_overfit_gate,
     learned_sigma_loss_override,
+    rotation_noise_override,
     scalar_loss_terms,
     scalar_term_ratios,
 )
@@ -172,3 +176,143 @@ def test_rescaled_learned_sigma_cli_flag_is_opt_in() -> None:
         .rescale_learned_sigmas
         is True
     )
+
+
+def test_rotation_noise_override_default_preserves_config_scale() -> None:
+    result = rotation_noise_override(False, original_scale=45.0)
+
+    assert result == {
+        "enabled": False,
+        "rotation_noise_scale_before": 45.0,
+        "rotation_noise_scale_after": 45.0,
+        "changed": False,
+    }
+
+
+def test_rotation_noise_override_only_changes_diagnostic_instance() -> None:
+    result = rotation_noise_override(True, original_scale=45.0)
+
+    assert result == {
+        "enabled": True,
+        "rotation_noise_scale_before": 45.0,
+        "rotation_noise_scale_after": 0.0,
+        "changed": True,
+    }
+
+
+def test_apply_rotation_noise_override_does_not_mutate_source_config() -> None:
+    source_config = SimpleNamespace(diff_rotation_noise_scale=45.0)
+    diffusion = SimpleNamespace(
+        rotation_noise_scale=source_config.diff_rotation_noise_scale
+    )
+    override = rotation_noise_override(
+        True, original_scale=source_config.diff_rotation_noise_scale
+    )
+
+    actual = apply_rotation_noise_override(diffusion, override)
+
+    assert actual == 0.0
+    assert diffusion.rotation_noise_scale == 0.0
+    assert source_config.diff_rotation_noise_scale == 45.0
+
+
+def test_apply_rotation_noise_override_default_preserves_instance() -> None:
+    diffusion = SimpleNamespace(rotation_noise_scale=45.0)
+    override = rotation_noise_override(False, original_scale=45.0)
+
+    assert apply_rotation_noise_override(diffusion, override) == 45.0
+    assert diffusion.rotation_noise_scale == 45.0
+
+
+def test_apply_rotation_noise_override_accepts_native_false_default() -> None:
+    diffusion = SimpleNamespace(rotation_noise_scale=False)
+    override = rotation_noise_override(False, original_scale=False)
+
+    assert apply_rotation_noise_override(diffusion, override) is False
+    assert diffusion.rotation_noise_scale is False
+
+
+def test_apply_rotation_noise_override_fails_closed_when_instance_ignores_write() -> (
+    None
+):
+    class ReadOnlyDiffusion:
+        rotation_noise_scale = 45.0
+
+        def __setattr__(self, name: str, value: object) -> None:
+            if name == "rotation_noise_scale":
+                return
+            super().__setattr__(name, value)
+
+    diffusion = ReadOnlyDiffusion()
+    override = rotation_noise_override(True, original_scale=45.0)
+
+    with pytest.raises(RuntimeError, match="did not reach"):
+        apply_rotation_noise_override(diffusion, override)
+
+
+def test_rotation_noise_override_keeps_native_false_scale_disabled() -> None:
+    result = rotation_noise_override(True, original_scale=False)
+
+    assert result == {
+        "enabled": True,
+        "rotation_noise_scale_before": False,
+        "rotation_noise_scale_after": 0.0,
+        "changed": False,
+    }
+
+
+@pytest.mark.parametrize("value", [True, -1.0, float("nan"), float("inf"), "45"])
+def test_rotation_noise_override_rejects_invalid_scales(value: object) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        rotation_noise_override(False, original_scale=value)
+
+
+def test_cli_parses_rotation_flag_independently() -> None:
+    required = [
+        "--data-root",
+        "/data",
+        "--input-npz",
+        "/input.npz",
+        "--manifest",
+        "/manifest.json",
+        "--report",
+        "/report.json",
+    ]
+    defaults = build_parser().parse_args(required)
+    assert defaults.disable_rotation_noise is False
+
+    enabled = build_parser().parse_args([*required, "--disable-rotation-noise"])
+    assert enabled.disable_rotation_noise is True
+
+
+def test_diagnostic_flag_state_keeps_supported_switches_independent() -> None:
+    assert diagnostic_flag_state(
+        disable_rotation_noise=False, rescale_learned_sigmas=False
+    ) == {
+        "disable_rotation_noise": False,
+        "rescale_learned_sigmas": False,
+    }
+    assert diagnostic_flag_state(
+        disable_rotation_noise=True, rescale_learned_sigmas=False
+    ) == {
+        "disable_rotation_noise": True,
+        "rescale_learned_sigmas": False,
+    }
+    assert diagnostic_flag_state(
+        disable_rotation_noise=False, rescale_learned_sigmas=True
+    ) == {
+        "disable_rotation_noise": False,
+        "rescale_learned_sigmas": True,
+    }
+
+
+@pytest.mark.parametrize("field", ["disable_rotation_noise", "rescale_learned_sigmas"])
+def test_diagnostic_flag_state_rejects_non_boolean_values(field: str) -> None:
+    values: dict[str, object] = {
+        "disable_rotation_noise": False,
+        "rescale_learned_sigmas": False,
+    }
+    values[field] = 1
+
+    with pytest.raises(TypeError, match=f"{field} must be a boolean"):
+        diagnostic_flag_state(**values)
