@@ -7,7 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from scripts.placegen_overfit_one import _atomic_json, evaluate_overfit_gate
+from scripts.placegen_overfit_one import (
+    _atomic_json,
+    evaluate_overfit_gate,
+    scalar_loss_terms,
+    scalar_term_ratios,
+)
 
 
 def _green_metrics() -> dict[str, float | bool]:
@@ -91,3 +96,17 @@ def test_atomic_report_publish_refuses_overwrite(tmp_path: Path) -> None:
 
     assert json.loads(output.read_text(encoding="utf-8")) == {"version": 1}
     assert not list(tmp_path.glob(".*.tmp-*"))
+
+
+def test_scalar_loss_probe_helpers_keep_all_scalars_and_json_safe_ratios() -> None:
+    before = scalar_loss_terms(
+        {"loss": 2.0, "mse": 1.0, "vb": [0.0], "not_scalar": [1.0, 2.0]}
+    )
+    after = scalar_loss_terms({"loss": 0.5, "mse": 0.25, "vb": 0.0})
+
+    assert before == {"loss": 2.0, "mse": 1.0, "vb": 0.0}
+    assert scalar_term_ratios(before, after) == {
+        "loss": 0.25,
+        "mse": 0.25,
+        "vb": None,
+    }

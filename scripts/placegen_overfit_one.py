@@ -26,6 +26,9 @@ SEVERE_DISTANCE_M = 0.5
 PROBE_TIMESTEPS = (0, 50, 99)
 PROBE_SEED = 424242
 BOUNDARY_TOLERANCE = 1.0e-3
+REQUIRED_PROBE_TERMS = frozenset(
+    {"loss", "mse", "mse_r", "mse_s", "vb", "vb_r", "vb_s", "loss_r", "loss_s"}
+)
 
 
 def evaluate_overfit_gate(metrics: Mapping[str, Any], *, steps: int) -> dict[str, Any]:
@@ -140,6 +143,36 @@ def _boundary_counts(value: np.ndarray) -> dict[str, Any]:
         result[f"near_abs_{int(boundary)}_count"] = count
         result[f"near_abs_{int(boundary)}_fraction"] = count / total
     return result
+
+
+def scalar_loss_terms(values: Mapping[str, Any]) -> dict[str, float]:
+    """Convert every scalar loss term to a finite Python float."""
+
+    result: dict[str, float] = {}
+    for name, value in values.items():
+        if hasattr(value, "detach"):
+            value = value.detach().cpu().numpy()
+        array = np.asarray(value)
+        if array.size != 1:
+            continue
+        scalar = float(array.reshape(-1)[0])
+        if not math.isfinite(scalar):
+            raise ValueError(f"loss term {name!r} is non-finite")
+        result[str(name)] = scalar
+    return result
+
+
+def scalar_term_ratios(
+    before: Mapping[str, float], after: Mapping[str, float]
+) -> dict[str, float | None]:
+    """Return JSON-safe after/before ratios for matching scalar terms."""
+
+    if set(before) != set(after):
+        raise ValueError("before and after loss terms differ")
+    return {
+        name: after[name] / before[name] if before[name] != 0.0 else None
+        for name in sorted(before)
+    }
 
 
 def _atomic_json(path: Path, payload: Mapping[str, Any]) -> None:
@@ -308,7 +341,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     initial_model_sha = state_dict_sha256(module.network.state_dict())
 
-    def fixed_loss_probes() -> dict[str, float]:
+    def fixed_loss_probes() -> dict[str, dict[str, float]]:
         was_training = module.training
         module.eval()
         cuda_devices: list[int] = []
@@ -318,7 +351,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 if device.index is None
                 else int(device.index)
             ]
-        values: dict[str, float] = {}
+        values: dict[str, dict[str, float]] = {}
         try:
             with torch.inference_mode():
                 for timestep_value in PROBE_TIMESTEPS:
@@ -337,13 +370,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                             probe_timestep,
                             module._model_kwargs(tensor_batch),
                         )
-                        value = float(probe_losses["loss"].mean().detach().cpu())
-                        if not math.isfinite(value):
+                        scalar_terms = scalar_loss_terms(probe_losses)
+                        missing_terms = sorted(
+                            REQUIRED_PROBE_TERMS.difference(scalar_terms)
+                        )
+                        if missing_terms:
                             raise RuntimeError(
-                                "non-finite fixed loss probe at timestep "
-                                f"{timestep_value}"
+                                "fixed loss probe is missing scalar terms: "
+                                f"{missing_terms}"
                             )
-                        values[str(timestep_value)] = value
+                        values[str(timestep_value)] = scalar_terms
         finally:
             module.train(was_training)
         return values
@@ -397,9 +433,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     final_model_sha = state_dict_sha256(module.network.state_dict())
     probe_loss_after = fixed_loss_probes()
     probe_loss_ratio = {
-        timestep: probe_loss_after[timestep] / probe_loss_before[timestep]
-        if probe_loss_before[timestep] > 0.0
-        else math.inf
+        timestep: scalar_term_ratios(
+            probe_loss_before[timestep], probe_loss_after[timestep]
+        )
         for timestep in probe_loss_before
     }
 
@@ -486,9 +522,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "seed": PROBE_SEED,
             "module_mode_before": "eval",
             "module_mode_after": "eval",
-            "loss_before": probe_loss_before,
-            "loss_after": probe_loss_after,
-            "after_to_before_ratio": probe_loss_ratio,
+            "loss_before": {
+                timestep: terms["loss"] for timestep, terms in probe_loss_before.items()
+            },
+            "loss_after": {
+                timestep: terms["loss"] for timestep, terms in probe_loss_after.items()
+            },
+            "after_to_before_ratio": {
+                timestep: ratios["loss"]
+                for timestep, ratios in probe_loss_ratio.items()
+            },
+            "scalar_terms_before": probe_loss_before,
+            "scalar_terms_after": probe_loss_after,
+            "scalar_terms_after_to_before_ratio": probe_loss_ratio,
             "fork_rng_does_not_advance_training_rng": True,
         },
         "loss": {
