@@ -21,7 +21,8 @@ pip install \
   -f https://data.pyg.org/whl/torch-2.7.0+cu128.html \
   --no-deps && \
 pip install --no-deps \
-  "git+https://github.com/r-pad/pyg_libs.git@990a90b509d86e2e083662e37ea7fd25e1518171" && \
+  "git+https://github.com/r-pad/pyg_libs.git@990a90b509d86e2e083662e37ea7fd25e1518171" \
+  "git+https://github.com/r-pad/visualize_3d.git@a9759c53462c377e28db56577b74929704af5f7d" && \
 pip install -e third_party/dedo --no-deps && \
 pip install -e "third_party/3D-Diffusion-Policy/3D-Diffusion-Policy" --no-deps && \
 pip install -e . --no-deps
@@ -36,6 +37,7 @@ train     = { cmd = "python scripts/train.py",     cwd = "." }
 eval      = { cmd = "python scripts/eval.py",      cwd = "." }
 placegen-one-step = { cmd = "python scripts/placegen_one_step.py", cwd = "." }
 placegen-overfit-one = { cmd = "python scripts/placegen_overfit_one.py", cwd = "." }
+placegen-visualize-overfit = { cmd = "python scripts/placegen_visualize_overfit.py", cwd = "." }
 placegen-predict-pose = { cmd = "python scripts/placegen_predict_pose.py", cwd = "." }
 placegen-train-grouped = { cmd = "python scripts/placegen_train_grouped.py", cwd = "." }
 placegen-predict-grouped = { cmd = "python scripts/placegen_predict_grouped.py", cwd = "." }
