@@ -393,7 +393,7 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
                         noise_s.shape,
                         noise_r=noise_r,
                         noise_s=noise_s,
-                        clip_denoised=False,
+                        clip_denoised=True,
                         model_kwargs=model_kwargs,
                         progress=False,
                         device=device,

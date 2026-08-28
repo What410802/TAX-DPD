@@ -34,6 +34,15 @@ implemented capability is always named
 and this path does not reproduce the unpublished official TAX-DPD module or its
 GMM stage.
 
+The reconstructed deployment wrapper keeps the diffusion implementation's
+`clip_denoised=True` safety default.  With the same validation checkpoint,
+input, and seed, disabling it produced a sampled range of
+`[-284, 171] m` and `252.3297 m` ordered RMSE; enabling it reduced the range to
+about `[-0.932, 1.993] m` and the RMSE to `0.790416 m`.  This fixes a wrapper
+default that caused numerical explosion.  It does **not** demonstrate training
+convergence, placement success, or model quality; those remain held-out
+evaluation questions.
+
 The trust boundaries are separate:
 
 - training accepts only PlaceGen profile

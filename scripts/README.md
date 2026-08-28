@@ -16,6 +16,12 @@ only `.../inference/manifest.json`, verifies its split-assignment and native
 dataset identities against the checkpoint, and predicts every test sample
 without opening the top-level training manifest.
 
+Both grouped and request prediction use the reconstructed fixed-frame
+wrapper's `clip_denoised=True` diffusion safety/default.  An explicit `False`
+override was found to amplify a validation sample to hundreds of metres; the
+default removes that numerical explosion but is not evidence that the model
+has converged or that its predictions are accurate.
+
 `placegen_predict_request.py` is the online PlaceGen process seam.  Invoke it as
 follows (the final `--` makes later arguments belong to the task):
 

@@ -23,6 +23,7 @@ class _UnusedNetwork(nn.Module):
 class _RecordingDiffusion:
     def __init__(self) -> None:
         self.initial_noise: list[tuple[torch.Tensor, torch.Tensor]] = []
+        self.clip_denoised: list[bool] = []
 
     def p_sample_loop_progressive(
         self,
@@ -32,12 +33,14 @@ class _RecordingDiffusion:
         *,
         noise_r: torch.Tensor,
         noise_s: torch.Tensor,
+        clip_denoised: bool,
         **_: object,
     ):
         del model
         assert tuple(shape_r) == tuple(noise_r.shape)
         assert tuple(shape_s) == tuple(noise_s.shape)
         self.initial_noise.append((noise_r.clone(), noise_s.clone()))
+        self.clip_denoised.append(clip_denoised)
         yield {"sample_r": noise_r, "sample_s": noise_s}
 
 
@@ -65,6 +68,8 @@ def test_sample_candidates_needs_no_ground_truth_and_is_seed_stable() -> None:
     assert torch.equal(first, second)
     assert torch.equal(first, extended[:, :2])
     assert not torch.equal(first[:, 0], first[:, 1])
+    assert torch.isfinite(first).all()
+    assert diffusion.clip_denoised == [True] * 7
     assert len(diffusion.initial_noise) == 7
     for _, shape_noise in diffusion.initial_noise:
         torch.testing.assert_close(
