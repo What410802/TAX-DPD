@@ -18,6 +18,7 @@ from non_rigid.utils.placegen_grouped import (
     load_grouped_inference_manifest,
     load_grouped_observation,
     sha256_file,
+    target_free_report_semantics,
 )
 from non_rigid.utils.placegen_prediction import predict_pose_candidates
 from non_rigid.utils.placegen_request import MAX_CANDIDATE_COUNT
@@ -107,7 +108,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "quality_assessment": "inconclusive-until-supervision-isolated-evaluation",
         "model": MODEL_CAPABILITY,
         "quality_scope": QUALITY_SCOPE,
-        "ground_truth_free": True,
+        **target_free_report_semantics(),
         "training_manifest_read": False,
         "target_pose_or_goal_point_cloud_read": False,
         "inference_manifest": str(inference.manifest_path),

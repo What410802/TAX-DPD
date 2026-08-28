@@ -12,7 +12,7 @@ import json
 import math
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import numpy as np
@@ -98,6 +98,19 @@ _TRAINING_NPZ_FIELDS = frozenset(
         "placegen_scene_center_world",
     }
 )
+
+
+def target_free_report_semantics() -> dict[str, str | bool]:
+    """Return the conservative semantics shared by grouped prediction reports."""
+
+    return {
+        "ground_truth_free": True,
+        "ground_truth_free_semantics": "target-and-goal-supervision-not-read",
+        "target_supervision_free": True,
+        "source_pose_provenance": "provenance-not-encoded-in-inference-manifest",
+        "source_pose_is_deployment_observation": False,
+        "deployment_input_valid": False,
+    }
 
 
 def canonical_json_sha256(value: Any) -> str:
@@ -215,6 +228,37 @@ def _relative_regular_file(
     if sha256_file(resolved) != expected_sha256:
         raise ValueError(f"{name} SHA-256 does not match its manifest")
     return resolved, expected_sha256
+
+
+def _relative_declared_file(
+    root: Path,
+    value: Mapping[str, Any],
+    name: str,
+) -> tuple[Path, str]:
+    """Validate a file declaration lexically without touching the file."""
+
+    _exact_fields(value, frozenset({"path", "sha256"}), name)
+    declared_path = _nonempty_string(value.get("path"), f"{name}.path")
+    if declared_path.startswith("/") or "\\" in declared_path:
+        raise ValueError(f"{name}.path must be a relative POSIX path")
+    relative = PurePosixPath(declared_path)
+    if not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
+        raise ValueError(f"{name}.path contains an unsafe component")
+    if relative.as_posix() != declared_path:
+        raise ValueError(f"{name}.path must use canonical POSIX spelling")
+    expected_sha256 = _sha256(value.get("sha256"), f"{name}.sha256")
+    return root.joinpath(*relative.parts), expected_sha256
+
+
+def _supervision_split_policy(value: tuple[str, ...]) -> tuple[str, ...]:
+    if not value or len(set(value)) != len(value):
+        raise ValueError("supervision_splits must be non-empty and unique")
+    unsupported = sorted(set(value).difference(SPLITS))
+    if unsupported:
+        raise ValueError(
+            f"supervision_splits contains unsupported splits: {unsupported}"
+        )
+    return tuple(split for split in SPLITS if split in value)
 
 
 def _point_counts(value: Any, name: str) -> dict[str, int]:
@@ -379,6 +423,7 @@ class GroupedTrainingManifest:
     group_counts: dict[str, int]
     split_assignment_sha256: str
     native_dataset_sha256: str
+    supervision_splits: tuple[str, ...]
     samples_by_split: dict[str, tuple[GroupedTrainingSample, ...]]
 
     @property
@@ -390,9 +435,18 @@ def load_grouped_training_manifest(
     manifest_path: Path | str,
     *,
     expected_group_counts: Mapping[str, int] | None = None,
+    supervision_splits: tuple[str, ...] = SPLITS,
 ) -> GroupedTrainingManifest:
-    """Validate the N3 grouped training manifest and all training NPZ files."""
+    """Validate metadata and open supervision only for explicitly allowed splits.
 
+    The default preserves the historical full-validation behavior.  Training must
+    pass ``("train", "validation")`` so test supervision paths remain declarations:
+    their schema, lexical canonical path, and SHA-256 text are checked, but the files
+    are never stat'ed, hashed, or opened.
+    """
+
+    validated_supervision_splits = _supervision_split_policy(supervision_splits)
+    validated_supervision_set = frozenset(validated_supervision_splits)
     path, manifest = _regular_json(manifest_path, "grouped training manifest")
     _exact_fields(manifest, _TRAINING_TOP_FIELDS, "grouped training manifest")
     if manifest.get("profile") != GROUPED_TRAINING_PROFILE:
@@ -496,14 +550,26 @@ def load_grouped_training_manifest(
             f"{name}.physical_setup.physical_state_sha256",
         )
         training_record = _mapping(sample.get("training_npz"), f"{name}.training_npz")
-        training_npz, training_sha = _relative_regular_file(
-            root, training_record, f"{name}.training_npz"
+        training_npz, training_sha = _relative_declared_file(
+            root,
+            training_record,
+            f"{name}.training_npz",
         )
         expected_training = root / task_name / task_type / f"{sample_id}.npz"
-        if training_npz != expected_training.resolve():
+        if training_npz != expected_training:
             raise ValueError(
                 f"{name}.training_npz path is not the canonical RPDiff path"
             )
+        if split in validated_supervision_set:
+            validated_path, validated_sha = _relative_regular_file(
+                root,
+                training_record,
+                f"{name}.training_npz",
+            )
+            if validated_path != training_npz or validated_sha != training_sha:
+                raise RuntimeError(
+                    f"{name}.training_npz declaration changed during validation"
+                )
         inference_record = _mapping(
             sample.get("inference_npz"), f"{name}.inference_npz"
         )
@@ -538,11 +604,12 @@ def load_grouped_training_manifest(
             >= rotation_limit
         ):
             raise ValueError(f"{name} exceeds the ordered Kabsch export gate")
-        _training_arrays(
-            training_npz,
-            point_counts=point_counts,
-            expected_tensor_sha256=tensor_hashes,
-        )
+        if split in validated_supervision_set:
+            _training_arrays(
+                training_npz,
+                point_counts=point_counts,
+                expected_tensor_sha256=tensor_hashes,
+            )
         samples[split].append(
             GroupedTrainingSample(
                 sample_id=sample_id,
@@ -607,6 +674,7 @@ def load_grouped_training_manifest(
         group_counts=group_counts,
         split_assignment_sha256=assignment_sha,
         native_dataset_sha256=native_sha,
+        supervision_splits=validated_supervision_splits,
         samples_by_split={
             split: tuple(sorted(samples[split], key=lambda sample: sample.sample_id))
             for split in SPLITS
@@ -949,4 +1017,5 @@ __all__ = [
     "load_grouped_training_manifest",
     "select_validation_checkpoint",
     "sha256_file",
+    "target_free_report_semantics",
 ]

@@ -17,6 +17,7 @@ from non_rigid.utils.placegen_grouped import (
     load_grouped_training_manifest,
     select_validation_checkpoint,
     sha256_file,
+    target_free_report_semantics,
 )
 from non_rigid.utils.placegen_request import (
     PREDICT_REQUEST_PROFILE,
@@ -246,6 +247,7 @@ def test_grouped_loaders_enforce_72_12_12_and_keep_test_out_of_selection(
     assert len(training.samples_by_split["train"]) == 72
     assert len(training.samples_by_split["validation"]) == 12
     assert len(training.samples_by_split["test"]) == 12
+    assert training.supervision_splits == ("train", "validation", "test")
     assert training.split_assignment_sha256 == "d" * 64
     assert inference.split_assignment_sha256 == training.split_assignment_sha256
     decision = select_validation_checkpoint(
@@ -294,6 +296,119 @@ def test_grouped_training_loader_rejects_npz_tamper_and_extra_manifest_fields(
             training_path,
             expected_group_counts={"train": 2, "validation": 1, "test": 1},
         )
+
+
+@pytest.mark.parametrize("test_artifact", ["missing", "malicious"])
+def test_training_scoped_loader_does_not_open_test_supervision(
+    tmp_path: Path,
+    test_artifact: str,
+) -> None:
+    counts = {"train": 2, "validation": 1, "test": 1}
+    training_path, _ = _write_grouped_export(
+        tmp_path / "export",
+        group_counts=counts,
+    )
+    payload = json.loads(training_path.read_text(encoding="utf-8"))
+    test_record = next(
+        sample for sample in payload["samples"] if sample["split"] == "test"
+    )
+    test_path = training_path.parent / test_record["training_npz"]["path"]
+    if test_artifact == "missing":
+        test_path.unlink()
+    else:
+        test_path.write_bytes(b"malicious target supervision that is not an NPZ")
+
+    loaded = load_grouped_training_manifest(
+        training_path,
+        expected_group_counts=counts,
+        supervision_splits=("train", "validation"),
+    )
+
+    assert loaded.supervision_splits == ("train", "validation")
+    assert loaded.samples_by_split["test"][0].training_npz == test_path
+    if test_artifact == "missing":
+        with pytest.raises(FileNotFoundError):
+            load_grouped_training_manifest(
+                training_path,
+                expected_group_counts=counts,
+            )
+    else:
+        with pytest.raises(ValueError, match="SHA-256"):
+            load_grouped_training_manifest(
+                training_path,
+                expected_group_counts=counts,
+            )
+
+
+def test_training_scoped_loader_never_stats_or_opens_test_supervision(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    counts = {"train": 2, "validation": 1, "test": 1}
+    training_path, _ = _write_grouped_export(
+        tmp_path / "export",
+        group_counts=counts,
+    )
+    payload = json.loads(training_path.read_text(encoding="utf-8"))
+    test_record = next(
+        sample for sample in payload["samples"] if sample["split"] == "test"
+    )
+    test_path = training_path.parent / test_record["training_npz"]["path"]
+    original_open = Path.open
+    original_stat = Path.stat
+
+    def guarded_open(path: Path, *args: object, **kwargs: object) -> object:
+        if path == test_path:
+            raise AssertionError("test supervision file was opened")
+        return original_open(path, *args, **kwargs)
+
+    def guarded_stat(path: Path, *args: object, **kwargs: object) -> object:
+        if path == test_path:
+            raise AssertionError("test supervision file was stat'ed")
+        return original_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", guarded_open)
+    monkeypatch.setattr(Path, "stat", guarded_stat)
+    loaded = load_grouped_training_manifest(
+        training_path,
+        expected_group_counts=counts,
+        supervision_splits=("train", "validation"),
+    )
+    assert loaded.samples_by_split["test"][0].training_npz == test_path
+
+
+def test_training_scoped_loader_rejects_unsafe_test_supervision_path(
+    tmp_path: Path,
+) -> None:
+    counts = {"train": 2, "validation": 1, "test": 1}
+    training_path, _ = _write_grouped_export(
+        tmp_path / "export",
+        group_counts=counts,
+    )
+    payload = json.loads(training_path.read_text(encoding="utf-8"))
+    test_record = next(
+        sample for sample in payload["samples"] if sample["split"] == "test"
+    )
+    test_record["training_npz"]["path"] = "../../test-target.npz"
+    training_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unsafe component"):
+        load_grouped_training_manifest(
+            training_path,
+            expected_group_counts=counts,
+            supervision_splits=("train", "validation"),
+        )
+
+
+def test_grouped_prediction_semantics_are_target_only_and_non_deployment() -> None:
+    assert target_free_report_semantics() == {
+        "ground_truth_free": True,
+        "ground_truth_free_semantics": "target-and-goal-supervision-not-read",
+        "target_supervision_free": True,
+        "source_pose_provenance": "provenance-not-encoded-in-inference-manifest",
+        "source_pose_is_deployment_observation": False,
+        "deployment_input_valid": False,
+    }
 
 
 def test_inference_loader_rejects_training_manifest_and_goal_fields(

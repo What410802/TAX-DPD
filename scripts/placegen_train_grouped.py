@@ -34,6 +34,7 @@ from non_rigid.utils.placegen_grouped import (
 from non_rigid.utils.state_digest import clone_state_dict, state_dict_sha256
 
 REPORT_SCHEMA = "placegen.taxdpd-grouped-training-report/0.1"
+TRAINING_SUPERVISION_SPLITS = ("train", "validation")
 
 
 def _config(
@@ -77,7 +78,7 @@ def _config(
     )
     training.sample_size = dataset.point_counts["action"]
     training.sample_size_anchor = dataset.point_counts["anchor"]
-    training.additional_train_logging_period = 10 ** 9
+    training.additional_train_logging_period = 10**9
     training.prediction_error_type = "demo"
     return omegaconf.OmegaConf.create(
         {
@@ -240,7 +241,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     dataset = load_grouped_training_manifest(
         args.manifest,
         expected_group_counts=expected_group_counts,
+        supervision_splits=TRAINING_SUPERVISION_SPLITS,
     )
+    if dataset.supervision_splits != TRAINING_SUPERVISION_SPLITS:
+        raise RuntimeError("training supervision policy differs from train+validation")
     cfg = _config(
         repo_root,
         dataset,
@@ -419,7 +423,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     best_checkpoint_path = checkpoint_by_epoch[best.epoch]
     if device.type == "cuda":
         torch.cuda.synchronize(device)
-        peak_vram_mib = float(torch.cuda.max_memory_allocated(device) / 1024 ** 2)
+        peak_vram_mib = float(torch.cuda.max_memory_allocated(device) / 1024**2)
     else:
         peak_vram_mib = None
     # Reload on CPU so verification does not temporarily double the live CUDA
@@ -460,6 +464,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "quality_scope": QUALITY_SCOPE,
         "group_counts": dict(dataset.group_counts),
         "sample_counts": dict(dataset.split_counts),
+        "supervision_splits_read": list(dataset.supervision_splits),
+        "test_supervision_files_opened": 0,
         "epochs": args.epochs,
         "global_optimizer_steps": global_step,
         "multi_epoch_verified": args.epochs >= 2,
