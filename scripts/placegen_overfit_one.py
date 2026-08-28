@@ -31,6 +31,36 @@ REQUIRED_PROBE_TERMS = frozenset(
 )
 
 
+def learned_sigma_loss_override(
+    enabled: bool,
+    *,
+    learn_sigma: bool,
+    original_loss_type: str,
+    diffusion_steps: int,
+) -> dict[str, Any]:
+    """Validate and describe the harness-only learned-sigma loss override."""
+
+    if not enabled:
+        return {
+            "enabled": False,
+            "loss_type_before": original_loss_type,
+            "loss_type_after": original_loss_type,
+            "vb_scale": 1.0,
+        }
+    if learn_sigma is not True:
+        raise ValueError("--rescale-learned-sigmas requires learn_sigma=true")
+    if original_loss_type != "MSE":
+        raise ValueError("--rescale-learned-sigmas requires original loss_type=MSE")
+    if diffusion_steps != 100:
+        raise ValueError("--rescale-learned-sigmas requires 100 diffusion steps")
+    return {
+        "enabled": True,
+        "loss_type_before": "MSE",
+        "loss_type_after": "RESCALED_MSE",
+        "vb_scale": diffusion_steps / 1000.0,
+    }
+
+
 def evaluate_overfit_gate(metrics: Mapping[str, Any], *, steps: int) -> dict[str, Any]:
     """Apply the pre-registered one-sample gate without importing ML packages."""
 
@@ -334,6 +364,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         for name, value in batch.items()
     }
     module = TAX3Dv2FixedFrameModule(TAX3Dv2Network(cfg.model), cfg).to(device)
+    loss_override = learned_sigma_loss_override(
+        args.rescale_learned_sigmas,
+        learn_sigma=bool(cfg.model.learn_sigma),
+        original_loss_type=module.diffusion.loss_type.name,
+        diffusion_steps=int(module.diff_train_steps),
+    )
+    if loss_override["enabled"]:
+        module.diffusion.loss_type = type(module.diffusion.loss_type).RESCALED_MSE
+    if module.diffusion.loss_type.name != loss_override["loss_type_after"]:
+        raise RuntimeError("diagnostic loss override did not reach the requested state")
     optimizer = torch.optim.AdamW(
         module.parameters(),
         lr=float(cfg.training.lr),
@@ -516,6 +556,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_index": 0,
         "candidate_count": 1,
         "sampling_only_after_final_step": True,
+        "learned_sigma_loss_override": loss_override,
         "target_decomposition": target_decomposition,
         "fixed_loss_probes": {
             "timesteps": list(PROBE_TIMESTEPS),
@@ -580,7 +621,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     return report
 
 
-def main() -> None:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--repo-root", type=Path, default=Path(__file__).resolve().parents[1]
@@ -596,7 +637,12 @@ def main() -> None:
     parser.add_argument("--sample-seed", type=int, default=1701)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--require-pass", action="store_true")
-    args = parser.parse_args()
+    parser.add_argument("--rescale-learned-sigmas", action="store_true")
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
     report = run(args)
     print(json.dumps(report, sort_keys=True))
     if args.require_pass and not report["gate"]["passed"]:

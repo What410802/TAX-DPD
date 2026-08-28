@@ -9,7 +9,9 @@ import pytest
 
 from scripts.placegen_overfit_one import (
     _atomic_json,
+    build_parser,
     evaluate_overfit_gate,
+    learned_sigma_loss_override,
     scalar_loss_terms,
     scalar_term_ratios,
 )
@@ -110,3 +112,63 @@ def test_scalar_loss_probe_helpers_keep_all_scalars_and_json_safe_ratios() -> No
         "mse": 0.25,
         "vb": None,
     }
+
+
+def test_learned_sigma_loss_override_is_opt_in_and_scales_vb() -> None:
+    default = learned_sigma_loss_override(
+        False, learn_sigma=True, original_loss_type="MSE", diffusion_steps=100
+    )
+    enabled = learned_sigma_loss_override(
+        True, learn_sigma=True, original_loss_type="MSE", diffusion_steps=100
+    )
+
+    assert default == {
+        "enabled": False,
+        "loss_type_before": "MSE",
+        "loss_type_after": "MSE",
+        "vb_scale": 1.0,
+    }
+    assert enabled == {
+        "enabled": True,
+        "loss_type_before": "MSE",
+        "loss_type_after": "RESCALED_MSE",
+        "vb_scale": 0.1,
+    }
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"learn_sigma": False, "original_loss_type": "MSE", "diffusion_steps": 100},
+        {
+            "learn_sigma": True,
+            "original_loss_type": "RESCALED_MSE",
+            "diffusion_steps": 100,
+        },
+        {"learn_sigma": True, "original_loss_type": "MSE", "diffusion_steps": 99},
+    ],
+)
+def test_learned_sigma_loss_override_fails_closed(kwargs: dict[str, object]) -> None:
+    with pytest.raises(ValueError):
+        learned_sigma_loss_override(True, **kwargs)
+
+
+def test_rescaled_learned_sigma_cli_flag_is_opt_in() -> None:
+    required = [
+        "--data-root",
+        "/data",
+        "--input-npz",
+        "/input.npz",
+        "--manifest",
+        "/manifest.json",
+        "--report",
+        "/report.json",
+    ]
+
+    assert build_parser().parse_args(required).rescale_learned_sigmas is False
+    assert (
+        build_parser()
+        .parse_args([*required, "--rescale-learned-sigmas"])
+        .rescale_learned_sigmas
+        is True
+    )
