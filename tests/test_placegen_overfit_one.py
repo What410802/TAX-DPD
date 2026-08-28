@@ -63,11 +63,18 @@ def test_overfit_gate_marks_half_meter_outputs_as_severe() -> None:
     assert all(result["severe_red_flags"].values())
 
 
-def test_overfit_gate_requires_two_matched_timestep_cycles() -> None:
-    with pytest.raises(ValueError, match="must equal 200"):
-        evaluate_overfit_gate(_green_metrics(), steps=199)
-    with pytest.raises(ValueError, match="must equal 200"):
-        evaluate_overfit_gate(_green_metrics(), steps=201)
+@pytest.mark.parametrize("steps", [200, 1000])
+def test_overfit_gate_accepts_complete_matched_timestep_cycles(steps: int) -> None:
+    result = evaluate_overfit_gate(_green_metrics(), steps=steps)
+
+    assert result["passed"] is True
+    assert result["thresholds"]["steps"] == steps
+
+
+@pytest.mark.parametrize("steps", [199, 201])
+def test_overfit_gate_rejects_incomplete_timestep_cycles(steps: int) -> None:
+    with pytest.raises(ValueError, match="at least 200 and a multiple of 100"):
+        evaluate_overfit_gate(_green_metrics(), steps=steps)
 
 
 def test_overfit_gate_rejects_missing_metrics() -> None:

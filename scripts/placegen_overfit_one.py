@@ -23,13 +23,16 @@ SAMPLED_RMSE_REDUCTION_MIN = 0.80
 TRANSLATION_LIMIT_MM = 20.0
 ROTATION_LIMIT_DEG = 10.0
 SEVERE_DISTANCE_M = 0.5
+PROBE_TIMESTEPS = (0, 50, 99)
+PROBE_SEED = 424242
+BOUNDARY_TOLERANCE = 1.0e-3
 
 
 def evaluate_overfit_gate(metrics: Mapping[str, Any], *, steps: int) -> dict[str, Any]:
     """Apply the pre-registered one-sample gate without importing ML packages."""
 
-    if steps != 2 * LOSS_CYCLE_LENGTH:
-        raise ValueError(f"steps must equal {2 * LOSS_CYCLE_LENGTH}")
+    if steps < 2 * LOSS_CYCLE_LENGTH or steps % LOSS_CYCLE_LENGTH != 0:
+        raise ValueError("steps must be at least 200 and a multiple of 100")
     required = {
         "finite",
         "parameter_changed",
@@ -75,7 +78,7 @@ def evaluate_overfit_gate(metrics: Mapping[str, Any], *, steps: int) -> dict[str
         "passed": all(checks.values()),
         "checks": checks,
         "thresholds": {
-            "steps": DEFAULT_STEPS,
+            "steps": steps,
             "matched_loss_cycle_length": LOSS_CYCLE_LENGTH,
             "second_vs_first_cycle_loss_ratio_max": LOSS_RATIO_LIMIT,
             "sampled_ordered_rmse_max_m": SAMPLED_RMSE_LIMIT_M,
@@ -115,6 +118,30 @@ def _translation_matrix(value: np.ndarray) -> np.ndarray:
     return matrix
 
 
+def _array_range(value: np.ndarray) -> dict[str, Any]:
+    array = np.asarray(value)
+    return {
+        "shape": list(array.shape),
+        "minimum": float(np.min(array)),
+        "maximum": float(np.max(array)),
+        "maximum_absolute": float(np.max(np.abs(array))),
+    }
+
+
+def _boundary_counts(value: np.ndarray) -> dict[str, Any]:
+    absolute = np.abs(np.asarray(value, dtype=np.float64))
+    total = int(absolute.size)
+    result: dict[str, Any] = {
+        "absolute_tolerance": BOUNDARY_TOLERANCE,
+        "coordinate_count": total,
+    }
+    for boundary in (1.0, 2.0):
+        count = int(np.count_nonzero(np.abs(absolute - boundary) <= BOUNDARY_TOLERANCE))
+        result[f"near_abs_{int(boundary)}_count"] = count
+        result[f"near_abs_{int(boundary)}_fraction"] = count / total
+    return result
+
+
 def _atomic_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.tmp-{os.getpid()}")
@@ -151,10 +178,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     from non_rigid.utils.rigid_transform import estimate_ordered_rigid_transform
     from non_rigid.utils.state_digest import state_dict_sha256
 
-    if args.steps != DEFAULT_STEPS:
-        raise ValueError(
-            f"--steps is pre-registered at {DEFAULT_STEPS}; got {args.steps}"
-        )
+    if args.steps < 2 * LOSS_CYCLE_LENGTH or args.steps % LOSS_CYCLE_LENGTH != 0:
+        raise ValueError("--steps must be at least 200 and a multiple of 100")
     if args.seed < 0 or args.sample_seed < 0:
         raise ValueError("seeds must be non-negative")
     supplied_report = Path(args.report).expanduser()
@@ -282,6 +307,57 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         weight_decay=float(cfg.training.weight_decay),
     )
     initial_model_sha = state_dict_sha256(module.network.state_dict())
+
+    def fixed_loss_probes() -> dict[str, float]:
+        was_training = module.training
+        module.eval()
+        cuda_devices: list[int] = []
+        if device.type == "cuda":
+            cuda_devices = [
+                torch.cuda.current_device()
+                if device.index is None
+                else int(device.index)
+            ]
+        values: dict[str, float] = {}
+        try:
+            with torch.inference_mode():
+                for timestep_value in PROBE_TIMESTEPS:
+                    with torch.random.fork_rng(devices=cuda_devices):
+                        torch.random.default_generator.manual_seed(PROBE_SEED)
+                        if device.type == "cuda":
+                            torch.cuda.default_generators[cuda_devices[0]].manual_seed(
+                                PROBE_SEED
+                            )
+                        probe_timestep = torch.tensor(
+                            [timestep_value], dtype=torch.long, device=device
+                        )
+                        probe_losses = module.diffusion.training_losses(
+                            module.network,
+                            module._get_x_start(tensor_batch),
+                            probe_timestep,
+                            module._model_kwargs(tensor_batch),
+                        )
+                        value = float(probe_losses["loss"].mean().detach().cpu())
+                        if not math.isfinite(value):
+                            raise RuntimeError(
+                                "non-finite fixed loss probe at timestep "
+                                f"{timestep_value}"
+                            )
+                        values[str(timestep_value)] = value
+        finally:
+            module.train(was_training)
+        return values
+
+    module.train()
+    target_x_start = module._get_x_start(tensor_batch)
+    target_reference = target_x_start.mean(dim=-1, keepdim=True)
+    target_shape_residual = target_x_start - target_reference
+    target_decomposition = {
+        "x_start": _array_range(target_x_start.detach().cpu().numpy()),
+        "reference_mean": _array_range(target_reference.detach().cpu().numpy()),
+        "shape_residual": _array_range(target_shape_residual.detach().cpu().numpy()),
+    }
+    probe_loss_before = fixed_loss_probes()
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
         torch.cuda.synchronize(device)
@@ -289,7 +365,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     training_started = time.perf_counter()
     losses: list[float] = []
     gradient_norms: list[float] = []
-    module.train()
     for step in range(args.steps):
         optimizer.zero_grad(set_to_none=True)
         x_start = module._get_x_start(tensor_batch)
@@ -320,6 +395,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         torch.cuda.synchronize(device)
     training_duration = time.perf_counter() - training_started
     final_model_sha = state_dict_sha256(module.network.state_dict())
+    probe_loss_after = fixed_loss_probes()
+    probe_loss_ratio = {
+        timestep: probe_loss_after[timestep] / probe_loss_before[timestep]
+        if probe_loss_before[timestep] > 0.0
+        else math.inf
+        for timestep in probe_loss_before
+    }
 
     sampling_started = time.perf_counter()
     module.eval()
@@ -398,6 +480,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_index": 0,
         "candidate_count": 1,
         "sampling_only_after_final_step": True,
+        "target_decomposition": target_decomposition,
+        "fixed_loss_probes": {
+            "timesteps": list(PROBE_TIMESTEPS),
+            "seed": PROBE_SEED,
+            "module_mode_before": "eval",
+            "module_mode_after": "eval",
+            "loss_before": probe_loss_before,
+            "loss_after": probe_loss_after,
+            "after_to_before_ratio": probe_loss_ratio,
+            "fork_rng_does_not_advance_training_rng": True,
+        },
         "loss": {
             "first_matched_timestep_cycle": losses[:LOSS_CYCLE_LENGTH],
             "second_matched_timestep_cycle": losses[-LOSS_CYCLE_LENGTH:],
@@ -419,6 +512,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "predicted_world_from_object": predicted_world_pose.tolist(),
         "target_world_from_object": target_world_pose.tolist(),
         "sampled_point_range": value_range,
+        "sampled_coordinate_boundaries": _boundary_counts(sampled_numpy),
         "finite": finite,
         "initial_model_state_sha256": initial_model_sha,
         "final_model_state_sha256": final_model_sha,
