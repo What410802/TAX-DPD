@@ -35,6 +35,7 @@ train-gmm = { cmd = "python scripts/train_gmm.py", cwd = "." }
 train     = { cmd = "python scripts/train.py",     cwd = "." }
 eval      = { cmd = "python scripts/eval.py",      cwd = "." }
 placegen-one-step = { cmd = "python scripts/placegen_one_step.py", cwd = "." }
+placegen-overfit-one = { cmd = "python scripts/placegen_overfit_one.py", cwd = "." }
 placegen-predict-pose = { cmd = "python scripts/placegen_predict_pose.py", cwd = "." }
 placegen-train-grouped = { cmd = "python scripts/placegen_train_grouped.py", cwd = "." }
 placegen-predict-grouped = { cmd = "python scripts/placegen_predict_grouped.py", cwd = "." }
