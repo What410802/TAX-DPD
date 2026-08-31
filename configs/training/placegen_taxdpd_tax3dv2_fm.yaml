@@ -1,0 +1,15 @@
+lr: 1e-4
+lr_warmup_steps: 10
+weight_decay: 1e-5
+epochs: 100
+batch_size: 1
+val_batch_size: 1
+grad_clip_norm: 1.0
+num_training_steps: null
+sample_size: null
+sample_size_anchor: null
+check_val_every_n_epochs: 1
+num_wta_trials: 1
+additional_train_logging_period: 1000000
+prediction_error_type: demo
+checkpoint_file: null

@@ -1,0 +1,39 @@
+name: placegen_taxdpd
+data_dir: ??
+material: rigid
+
+# Identity labels retained for manifests; the loader discovers flat files in
+# training/{train,validation,test} and does not construct an RPDiff task path.
+rpdiff_task_name: placegen_plate_taxdpd
+rpdiff_task_type: task_name_plate_on_rack
+rpdiff_descriptions_path: null
+
+num_demos: null
+train_dataset_size: null
+val_dataset_size: null
+test_dataset_size: null
+val_use_defaults: false
+preprocess: false
+augment_gt: false
+
+sample_size_action: 1024
+sample_size_anchor: 1024
+downsample_type: none
+pred_frame: null
+noisy_goal_scale: null
+action_context_frame: null
+pcd_scale: 1.0
+
+# The first controlled comparison uses already-materialized noisy RGB-D
+# observations. Extra geometric augmentation is a later isolated variable.
+scene_transform_type: identity
+translation_variance: 0.0
+rotation_variance: 0.0
+action_plane_occlusion: 0.0
+action_plane_standoff: 0.0
+action_ball_occlusion: 0.0
+action_ball_radius: 0.0
+anchor_plane_occlusion: 0.0
+anchor_plane_standoff: 0.0
+anchor_ball_occlusion: 0.0
+anchor_ball_radius: 0.0

@@ -18,6 +18,141 @@ from non_rigid.utils.transform_utils import random_se3
 
 from typing import List
 
+_PLACEGEN_REQUIRED_FIELDS = frozenset(
+    {
+        "action_points_source_world",
+        "action_points_target_world",
+        "anchor_points_world",
+        "source_world_from_object",
+        "target_world_from_object",
+        "shapenet_id",
+    }
+)
+
+
+class PlaceGenTaxDpdDataset(data.Dataset):
+    """Read PlaceGen's ordered 1024/1024 export without pickle or resampling.
+
+    The files are produced by ``TaxPoseRpdiffGroupedExporter``, but this loader
+    intentionally reconstructs TAX-DPD's joint-scene centering rather than
+    consuming TAX-Pose's action-centroid tensors.  Ordered source/target action
+    slots remain aligned, so the same artifact can feed DDPM and FM ablations.
+    """
+
+    def __init__(self, root, dataset_cfg, type):
+        super().__init__()
+        self.root = Path(root).expanduser().resolve()
+        self.dataset_cfg = dataset_cfg
+        self.type = type
+        split = {"train": "train", "val": "validation", "test": "test"}.get(type)
+        if split is None:
+            raise ValueError(f"unknown PlaceGen split type: {type}")
+        self.split_root = self.root / split
+        if not self.split_root.is_dir():
+            raise FileNotFoundError(f"PlaceGen TAX-DPD split does not exist: {self.split_root}")
+        self.demo_files = tuple(sorted(self.split_root.glob("*_final_obj_points.npz")))
+        if not self.demo_files:
+            raise ValueError(f"PlaceGen TAX-DPD split is empty: {self.split_root}")
+        expected = {
+            "train": dataset_cfg.train_dataset_size,
+            "val": dataset_cfg.val_dataset_size,
+            "test": dataset_cfg.test_dataset_size,
+        }[type]
+        if expected is not None and int(expected) > 0:
+            self.length = int(expected)
+        else:
+            self.length = len(self.demo_files)
+        self.sample_size_action = int(dataset_cfg.sample_size_action)
+        self.sample_size_anchor = int(dataset_cfg.sample_size_anchor)
+
+    def __len__(self):
+        return self.length
+
+    @staticmethod
+    def _finite_points(value: np.ndarray, name: str, count: int) -> np.ndarray:
+        points = np.asarray(value)
+        if points.dtype != np.float32 or points.shape != (count, 3):
+            raise ValueError(f"{name} must be float32 [{count}, 3]")
+        if not np.isfinite(points).all():
+            raise ValueError(f"{name} must be finite")
+        return np.array(points, copy=True, order="C")
+
+    def __getitem__(self, index: int) -> Dict[str, torch.Tensor]:
+        path = self.demo_files[index % len(self.demo_files)]
+        if path.is_symlink() or not path.is_file():
+            raise ValueError(f"PlaceGen training artifact must be a regular file: {path}")
+        try:
+            with np.load(path, allow_pickle=False) as archive:
+                fields = frozenset(archive.files)
+                missing = _PLACEGEN_REQUIRED_FIELDS - fields
+                if missing:
+                    raise ValueError(f"PlaceGen training artifact misses fields: {sorted(missing)}")
+                action = self._finite_points(
+                    archive["action_points_source_world"],
+                    "action_points_source_world",
+                    self.sample_size_action,
+                )
+                goal = self._finite_points(
+                    archive["action_points_target_world"],
+                    "action_points_target_world",
+                    self.sample_size_action,
+                )
+                anchor = self._finite_points(
+                    archive["anchor_points_world"],
+                    "anchor_points_world",
+                    self.sample_size_anchor,
+                )
+                source_pose = np.asarray(archive["source_world_from_object"])
+                target_pose = np.asarray(archive["target_world_from_object"])
+                sample_id = np.asarray(archive["shapenet_id"])
+        except (OSError, ValueError) as error:
+            if isinstance(error, ValueError) and (
+                "PlaceGen" in str(error) or "points" in str(error)
+            ):
+                raise
+            raise ValueError(f"invalid pickle-free PlaceGen training artifact: {path}") from error
+        for pose, name in ((source_pose, "source"), (target_pose, "target")):
+            if (
+                pose.dtype != np.float64
+                or pose.shape != (4, 4)
+                or not np.isfinite(pose).all()
+                or not np.array_equal(pose[3], np.asarray([0.0, 0.0, 0.0, 1.0]))
+                or not np.allclose(pose[:3, :3].T @ pose[:3, :3], np.eye(3), atol=1e-6)
+                or not np.isclose(np.linalg.det(pose[:3, :3]), 1.0, atol=1e-6)
+            ):
+                raise ValueError(f"{name}_world_from_object must be a proper float64 SE(3)")
+        if sample_id.ndim != 0 or sample_id.dtype.kind not in "SU":
+            raise ValueError("shapenet_id must be a pickle-free string scalar")
+
+        action_pc = torch.from_numpy(action)
+        anchor_pc = torch.from_numpy(anchor)
+        goal_action_pc = torch.from_numpy(goal)
+        scene_center = torch.cat((action_pc, anchor_pc), dim=0).mean(dim=0)
+        action_pc = action_pc - scene_center
+        anchor_pc = anchor_pc - scene_center
+        goal_action_pc = goal_action_pc - scene_center
+        goal_flow = goal_action_pc - action_pc
+        translation = Translate(scene_center.unsqueeze(0))
+        source_pose_tensor = torch.from_numpy(np.array(source_pose, copy=True))
+        target_pose_tensor = torch.from_numpy(np.array(target_pose, copy=True))
+        return {
+            "pc_action": action_pc,
+            "pc_anchor": anchor_pc,
+            "pc": goal_action_pc,
+            "flow": goal_flow,
+            "seg": torch.zeros(self.sample_size_action, dtype=torch.int32),
+            "seg_anchor": torch.ones(self.sample_size_anchor, dtype=torch.int32),
+            "T_goal2world": translation.get_matrix().squeeze(0),
+            "T_action2world": translation.get_matrix().squeeze(0),
+            "T_action2goal": torch.from_numpy(target_pose @ np.linalg.inv(source_pose)),
+            "source_world_from_object": source_pose_tensor,
+            "target_world_from_object": target_pose_tensor,
+            "sample_index": torch.tensor(index % len(self.demo_files), dtype=torch.int64),
+        }
+
+    def set_eval_mode(self, eval_mode: bool):
+        del eval_mode
+
 def matrix_from_list(pose_list: List[float]) -> np.ndarray:
     trans = pose_list[:3]
     quat = pose_list[3:]
@@ -288,6 +423,7 @@ class RPDiffDataset(data.Dataset):
 DATASET_FN = {
     "rpdiff": RPDiffDataset,
     "rpdiff_fit": RPDiffDataset,
+    "placegen_taxdpd": PlaceGenTaxDpdDataset,
 }
 
 
