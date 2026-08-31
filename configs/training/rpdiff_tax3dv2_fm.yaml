@@ -1,0 +1,18 @@
+# The first FM comparison keeps the TAX-DPD optimizer/data budget and changes
+# only the generator mechanism.  This file intentionally mirrors
+# rpdiff_tax3dv2.yaml; set num_training_steps from the datamodule at runtime.
+lr: 1e-4
+lr_warmup_steps: 100
+weight_decay: 1e-5
+epochs: 20000
+batch_size: 32
+val_batch_size: 16
+grad_clip_norm: 1.0
+num_training_steps: null
+sample_size: null
+sample_size_anchor: null
+check_val_every_n_epochs: 100
+num_wta_trials: 10
+additional_train_logging_period: 5000
+prediction_error_type: distractor_min
+checkpoint_file: null
