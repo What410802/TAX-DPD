@@ -35,6 +35,10 @@ from non_rigid.models.dit.models import (
     TAX3Dv2_FixedFrame_Token_DiT,
     TAX3Dv2_MuFrame_DiT,
 )
+from non_rigid.models.flow_matching import (
+    flow_matching_loss,
+    integrate_velocity,
+)
 from non_rigid.utils.logging_utils import viz_predicted_vs_gt
 from non_rigid.utils.pointcloud_utils import expand_pcd
 
@@ -444,6 +448,119 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
             "rmse":             rmse,
             "cos_sim_wta":      cos_sim[torch.arange(bs), winner],
             "cos_sim":          cos_sim,
+        }
+
+
+class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
+    """Controlled Euclidean FM ablation using the fixed-frame TAX-DPD DiT.
+
+    Conditioning, frame/shape decomposition, point slots, and downstream WTA
+    result shape match ``TAX3Dv2FixedFrameModule``.  Only the DDPM corruption,
+    learned variance, loss, and sampler are replaced.  Rotation corruption is
+    intentionally rejected until a path-consistent velocity target exists.
+    """
+
+    def __init__(self, network: TAX3Dv2Network, cfg: omegaconf.DictConfig):
+        super().__init__(network, cfg)
+        if bool(cfg.model.learn_sigma):
+            raise ValueError("flow matching requires learn_sigma=false (3-channel velocity heads)")
+        if cfg.model.diff_rotation_noise_scale not in (False, 0, 0.0, None):
+            raise ValueError("standard Euclidean FM requires rotation corruption to be disabled")
+        self.fm_steps = int(cfg.model.fm_steps)
+        self.fm_solver = str(cfg.model.fm_solver)
+        self.fm_time_scale = float(cfg.model.fm_time_scale)
+        if self.fm_steps <= 0:
+            raise ValueError("fm_steps must be positive")
+        if self.fm_solver not in {"euler", "heun"}:
+            raise ValueError("fm_solver must be euler or heun")
+        if not np.isfinite(self.fm_time_scale) or self.fm_time_scale <= 0:
+            raise ValueError("fm_time_scale must be finite and positive")
+
+    def _get_x_start(self, batch: Dict) -> torch.Tensor:
+        return batch["pc"].to(self.device).permute(0, 2, 1)
+
+    @staticmethod
+    def _split_target(target: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        frame = target.mean(dim=2, keepdim=True)
+        return frame, target - frame
+
+    def _source(self, target: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        frame, shape = self._split_target(target)
+        source_frame = torch.randn_like(frame) * self.noise_scale
+        source_shape = torch.randn_like(shape) * self.noise_scale
+        if self.model_cfg.zero_shape:
+            source_shape = source_shape - source_shape.mean(dim=2, keepdim=True)
+        return source_frame, source_shape
+
+    def _velocity_model(self, model_kwargs: Dict[str, torch.Tensor]):
+        def velocity(state: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
+            frame = state[:, :, :1]
+            shape = state[:, :, 1:]
+            frame_velocity, shape_velocity = self.network(
+                frame,
+                shape,
+                time * self.fm_time_scale,
+                **model_kwargs,
+            )
+            if frame_velocity.shape[1] != 3 or shape_velocity.shape[1] != 3:
+                raise ValueError("FM DiT must return exactly three velocity channels per head")
+            return torch.cat((frame_velocity, shape_velocity), dim=2)
+
+        return velocity
+
+    def training_step(self, batch, batch_idx):
+        del batch_idx
+        self.train()
+        target = self._get_x_start(batch)
+        target_frame, target_shape = self._split_target(target)
+        source_frame, source_shape = self._source(target)
+        source = torch.cat((source_frame, source_shape), dim=2)
+        endpoint = torch.cat((target_frame, target_shape), dim=2)
+        losses, _, _ = flow_matching_loss(
+            self._velocity_model(self._model_kwargs(batch)),
+            endpoint,
+            source=source,
+        )
+        loss = losses.mean()
+        self.log("train/loss", loss, prog_bar=True, add_dataloader_idx=False)
+        return loss
+
+    @torch.no_grad()
+    def _predict_wta(self, batch: Dict, num_trials: Optional[int] = None) -> Dict:
+        n = num_trials if num_trials is not None else self.num_wta_trials
+        gt = batch["pc"].to(self.device)
+        bs = gt.shape[0]
+        pc_action = expand_pcd(batch["pc_action"].to(self.device), n)
+        pc_anchor = expand_pcd(batch["pc_anchor"].to(self.device), n)
+        gt_exp = expand_pcd(gt, n)
+        # Deployment has no target point cloud.  Use only the observed action
+        # shape to determine the latent tensor size; never inspect ``batch[pc]``
+        # when constructing the FM source state.
+        observed_shape = pc_action.permute(0, 2, 1)
+        source_frame, source_shape = self._source(observed_shape)
+        source = torch.cat((source_frame, source_shape), dim=2)
+        model_kwargs = {
+            "y": pc_anchor.permute(0, 2, 1),
+            "x0": pc_action.permute(0, 2, 1),
+        }
+        final = integrate_velocity(
+            self._velocity_model(model_kwargs),
+            source,
+            steps=self.fm_steps,
+            method=self.fm_solver,
+        )
+        pred_action = (final[:, :, :1] + final[:, :, 1:]).permute(0, 2, 1)
+        rmse = flow_rmse(pred_action, gt_exp, mask=False, seg=None).reshape(bs, n)
+        cos_sim = flow_cos_sim(pred_action, gt_exp, mask=False, seg=None).reshape(bs, n)
+        pred_action = pred_action.reshape(bs, n, -1, 3)
+        winner = torch.argmin(rmse, dim=-1)
+        return {
+            "pred_actions_wta": pred_action[torch.arange(bs, device=self.device), winner],
+            "pred_action": pred_action,
+            "rmse_wta": rmse[torch.arange(bs, device=self.device), winner],
+            "rmse": rmse,
+            "cos_sim_wta": cos_sim[torch.arange(bs, device=self.device), winner],
+            "cos_sim": cos_sim,
         }
 
 

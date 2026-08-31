@@ -19,7 +19,8 @@ from non_rigid.models.tax3d import (
 from non_rigid.models.tax3d_v2 import (
     TAX3Dv2Network,
     TAX3Dv2MuFrameModule,
-    TAX3Dv2FixedFrameModule
+    TAX3Dv2FixedFrameModule,
+    TAX3Dv2FixedFrameFlowMatchingModule,
 )
 
 from non_rigid.datasets.dedo import DedoDataModule
@@ -45,9 +46,13 @@ def create_model(cfg):
         network_fn = DiffusionTransformerNetwork
         module_fn = CrossDisplacementModule
 
-    elif cfg.model.name == "tax3dv2":
+    elif cfg.model.name in {"tax3dv2", "tax3dv2_fm"}:
         network_fn = TAX3Dv2Network
-        if cfg.model.frame_type == "fixed":
+        if cfg.model.name == "tax3dv2_fm":
+            if cfg.model.frame_type != "fixed":
+                raise ValueError("the first FM ablation supports only the fixed frame")
+            module_fn = TAX3Dv2FixedFrameFlowMatchingModule
+        elif cfg.model.frame_type == "fixed":
             module_fn = TAX3Dv2FixedFrameModule
         elif cfg.model.frame_type == "mu":
             module_fn = TAX3Dv2MuFrameModule

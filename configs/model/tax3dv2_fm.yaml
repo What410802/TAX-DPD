@@ -1,0 +1,39 @@
+name: tax3dv2_fm
+
+# Architecture and conditioning are held equal to tax3dv2.yaml.
+type: point
+size: xS
+in_channels: 3
+learn_sigma: false
+point_encoder: pn2
+feature: true
+joint_encode: true
+rel_pos: false
+rotary: false
+scene_anchor: false
+frame_type: fixed
+one_hot_recon: true
+zero_shape: true
+
+pred_frame: anchor_center
+noisy_goal_scale: 0.0
+action_context_frame: action_center
+object_scale: null
+scene_scale: null
+pcd_scale: 3.0
+
+# Kept for shared training-module/config compatibility. DDPM is not constructed.
+diff_train_steps: 100
+diff_inference_steps: 100
+diff_noise_schedule: linear
+diff_noise_scale: 1.0
+diff_type: flow_matching_condot
+diff_translation_noise_scale: false
+diff_rotation_noise_scale: false
+time_based_weighting: false
+
+# Continuous-time generator. Heun uses 2 * fm_steps NFEs.
+fm_steps: 20
+fm_solver: heun
+# Preserve the released DiT time-embedding scale while allowing fractional time.
+fm_time_scale: 100.0
