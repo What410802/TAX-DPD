@@ -492,6 +492,18 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
             source_shape = source_shape - source_shape.mean(dim=2, keepdim=True)
         return source_frame, source_shape
 
+    def _source_from_observation(self, pc_action: torch.Tensor) -> torch.Tensor:
+        """Build the deployment prior using observation shape only."""
+        if pc_action.ndim != 3 or pc_action.shape[1] != 3:
+            raise ValueError("pc_action must have shape [B, 3, N]")
+        source_frame = torch.randn(
+            pc_action.shape[0], 3, 1, device=pc_action.device, dtype=pc_action.dtype
+        ) * self.noise_scale
+        source_shape = torch.randn_like(pc_action) * self.noise_scale
+        if self.model_cfg.zero_shape:
+            source_shape = source_shape - source_shape.mean(dim=2, keepdim=True)
+        return torch.cat((source_frame, source_shape), dim=2)
+
     def _velocity_model(self, model_kwargs: Dict[str, torch.Tensor]):
         def velocity(state: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
             frame = state[:, :, :1]
@@ -537,8 +549,7 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
         # shape to determine the latent tensor size; never inspect ``batch[pc]``
         # when constructing the FM source state.
         observed_shape = pc_action.permute(0, 2, 1)
-        source_frame, source_shape = self._source(observed_shape)
-        source = torch.cat((source_frame, source_shape), dim=2)
+        source = self._source_from_observation(observed_shape)
         model_kwargs = {
             "y": pc_anchor.permute(0, 2, 1),
             "x0": pc_action.permute(0, 2, 1),
