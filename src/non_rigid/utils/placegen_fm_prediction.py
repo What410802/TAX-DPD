@@ -10,7 +10,10 @@ import numpy as np
 import torch
 from scipy.spatial.transform import Rotation
 
-from non_rigid.models.tax3d_v2 import TAX3Dv2FixedFrameFlowMatchingModule
+from non_rigid.models.tax3d_v2 import (
+    TAX3Dv2FixedFrameFlowMatchingModule,
+    TAX3Dv2FixedFrameModule,
+)
 from non_rigid.utils.placegen_fm_export import FMObservation
 from non_rigid.utils.rigid_transform import estimate_ordered_rigid_transform
 
@@ -37,7 +40,7 @@ class FMPredictionResult:
 
 
 def predict_fm_pose_candidates(
-    module: TAX3Dv2FixedFrameFlowMatchingModule,
+    module: TAX3Dv2FixedFrameFlowMatchingModule | TAX3Dv2FixedFrameModule,
     observation: FMObservation,
     device: torch.device,
     *,

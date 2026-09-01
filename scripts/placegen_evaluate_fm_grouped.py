@@ -16,8 +16,12 @@ from non_rigid.utils.placegen_fm_export import (
     sha256_file,
 )
 
-PREDICTION_SCHEMA = "placegen.tax3dv2-fm-grouped-prediction-report/0.1"
-EVALUATION_SCHEMA = "placegen.tax3dv2-fm-test-evaluation/0.1"
+PREDICTION_SCHEMAS = {
+    "placegen.tax3dv2-fm-grouped-prediction-report/0.1":
+        "placegen.tax3dv2-fm-test-evaluation/0.1",
+    "placegen.tax3dv2-ddpm-grouped-prediction-report/0.1":
+        "placegen.tax3dv2-ddpm-test-evaluation/0.1",
+}
 
 
 def _pose_errors(predicted: np.ndarray, target: np.ndarray) -> tuple[float, float]:
@@ -46,7 +50,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     prediction_path = Path(args.prediction_report).expanduser().resolve(strict=True)
     prediction = json.loads(prediction_path.read_text(encoding="utf-8"))
-    if prediction.get("schema") != PREDICTION_SCHEMA:
+    prediction_schema = prediction.get("schema")
+    if prediction_schema not in PREDICTION_SCHEMAS:
         raise ValueError("unexpected FM prediction report schema")
     if prediction.get("ground_truth_free") is not True:
         raise ValueError("prediction report is not target-free")
@@ -138,7 +143,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         }
     )
     report = {
-        "schema": EVALUATION_SCHEMA,
+        "schema": PREDICTION_SCHEMAS[prediction_schema],
+        "model": prediction.get("model"),
         "quality_claim": False,
         "prediction_report": str(prediction_path),
         "prediction_report_sha256": sha256_file(prediction_path),
