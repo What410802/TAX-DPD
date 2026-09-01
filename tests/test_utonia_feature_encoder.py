@@ -48,7 +48,7 @@ def test_joint_utonia_encoder_keeps_role_slots_and_flow_mlp() -> None:
     assert torch.isfinite(anchor).all()
     # Static action+anchor geometry is encoded jointly once, preserving
     # cross-role neighborhoods without rerunning the frozen backbone.
-    assert slots.call_slot_counts == [9]
+    assert slots.call_slot_counts == [9, 9]
 
 
 def test_joint_utonia_encoder_does_not_mutate_inputs() -> None:

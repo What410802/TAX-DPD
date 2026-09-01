@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -236,13 +237,58 @@ class UtoniaJointFeatureEncoder(nn.Module):
         self.action_mixer = mlp_encoder(3 * hidden_size, hidden_size)
         self.action_role = nn.Parameter(torch.zeros(1, hidden_size, 1))
         self.anchor_role = nn.Parameter(torch.zeros(1, hidden_size, 1))
+        self.static_cache_limit = int(getattr(model_cfg, "utonia_static_cache_limit", 128))
+        if self.static_cache_limit < 0:
+            raise ValueError("utonia_static_cache_limit must be non-negative")
+        self._static_geometry_cache: dict[str, torch.Tensor] = {}
+
+    @staticmethod
+    def _geometry_cache_key(scene: torch.Tensor) -> str:
+        value = scene.detach().float().cpu().contiguous()
+        digest = hashlib.sha256()
+        digest.update(str(tuple(value.shape)).encode())
+        digest.update(value.numpy().tobytes(order="C"))
+        return digest.hexdigest()
 
     def prepare_static_context(self, x0, y):
+        if x0.ndim != 3 or y.ndim != 3 or x0.shape[0] != y.shape[0]:
+            raise ValueError("static Utonia context requires matching [B, C, N] clouds")
         action_size = x0.shape[-1]
-        scene = self.geometry_encoder(torch.cat((x0, y), dim=2))
+        action_features = []
+        anchor_features = []
+        for action, anchor in zip(x0, y):
+            scene = torch.cat((action, anchor), dim=1).unsqueeze(0)
+            key = self._geometry_cache_key(scene)
+            raw = self._static_geometry_cache.get(key)
+            if raw is None:
+                if not hasattr(self.geometry_encoder, "frozen_features"):
+                    # Test doubles and non-Utonia slot encoders may expose only
+                    # a projected forward; retain the functional fallback.
+                    projected = self.geometry_encoder(scene)
+                    raw = projected.detach().cpu()
+                    projection = None
+                else:
+                    with torch.no_grad():
+                        raw = self.geometry_encoder.frozen_features(scene)
+                    raw = raw.detach().cpu().contiguous()
+                    projection = self.geometry_encoder.projection
+                if self.static_cache_limit > 0:
+                    if len(self._static_geometry_cache) >= self.static_cache_limit:
+                        self._static_geometry_cache.pop(next(iter(self._static_geometry_cache)))
+                    self._static_geometry_cache[key] = raw
+            else:
+                projection = getattr(self.geometry_encoder, "projection", None)
+            if projection is None:
+                projected = raw.to(device=scene.device, dtype=scene.dtype)
+            else:
+                projected = projection(
+                    raw.to(device=scene.device, dtype=scene.dtype)
+                )
+            action_features.append(projected[:, :, :action_size] + self.action_role)
+            anchor_features.append(projected[:, :, action_size:] + self.anchor_role)
         return (
-            scene[:, :, :action_size] + self.action_role,
-            scene[:, :, action_size:] + self.anchor_role,
+            torch.cat(action_features, dim=0),
+            torch.cat(anchor_features, dim=0),
         )
 
     def forward(self, x, y, x0, static_geometry=None):

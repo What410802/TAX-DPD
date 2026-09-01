@@ -44,4 +44,5 @@ utonia_input_scale_factor: 15.0
 utonia_transform_scale: 0.5
 utonia_center_shift: false
 utonia_transform_seed: 1701
+utonia_static_cache_limit: 128
 utonia_enable_flash: false
