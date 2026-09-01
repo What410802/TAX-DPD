@@ -1,7 +1,7 @@
-"""Train a PlaceGen-backed TAX3Dv2 generator without the unavailable RPDiff tree.
+"""Train PlaceGen-backed TAX3Dv2 FM or DDPM without the unavailable RPDiff tree.
 
-The first supported mode is ``fm`` and uses the controlled Euclidean CondOT
-module.  This runner intentionally avoids Lightning/W&B and publishes a small,
+The controlled modes share the same dataset, PointNet++/DiT architecture and
+budget.  This runner intentionally avoids Lightning/W&B and publishes a small,
 auditable checkpoint plus a manifest.  It is a development/pilot runner, not a
 claim that the incomplete public TAX-DPD release reproduces the paper pipeline.
 """
@@ -26,6 +26,10 @@ from non_rigid.utils.script_utils import create_model
 from non_rigid.utils.placegen_fm_checkpoint import (
     FM_CHECKPOINT_SCHEMA,
     FM_MODEL_CAPABILITY,
+)
+from non_rigid.utils.placegen_ddpm_checkpoint import (
+    DDPM_CHECKPOINT_SCHEMA,
+    DDPM_MODEL_CAPABILITY,
 )
 from non_rigid.utils.state_digest import state_dict_sha256
 
@@ -103,7 +107,45 @@ def _batch(dataset: PlaceGenTaxDpdDataset, index: int, device: torch.device) -> 
     }
 
 
-def _loss_for_item(module: Any, item: dict[str, Any], *, seed: int) -> torch.Tensor:
+def _loss_for_item(
+    module: Any,
+    item: dict[str, Any],
+    *,
+    seed: int,
+    mode: str,
+) -> torch.Tensor:
+    if mode == "ddpm":
+        target = module._get_x_start(item)
+        generator = torch.Generator(device=target.device)
+        generator.manual_seed(seed)
+        time = torch.randint(
+            0,
+            module.diff_train_steps,
+            (target.shape[0],),
+            device=target.device,
+            generator=generator,
+        ).long()
+        cuda_devices = (
+            [
+                torch.cuda.current_device()
+                if target.device.index is None
+                else int(target.device.index)
+            ]
+            if target.device.type == "cuda"
+            else []
+        )
+        with torch.random.fork_rng(devices=cuda_devices):
+            torch.manual_seed(seed + 1)
+            if target.device.type == "cuda":
+                torch.cuda.manual_seed(seed + 1)
+            return module.diffusion.training_losses(
+                module.network,
+                target,
+                time,
+                module._model_kwargs(item),
+            )["loss"].mean()
+    if mode != "fm":
+        raise ValueError(f"unsupported training mode: {mode}")
     target = module._get_x_start(item)
     target_frame, target_shape = module._split_target(target)
     endpoint = torch.cat((target_frame, target_shape), dim=2)
@@ -124,8 +166,8 @@ def _loss_for_item(module: Any, item: dict[str, Any], *, seed: int) -> torch.Ten
 
 
 def train(args: argparse.Namespace) -> dict[str, Any]:
-    if args.mode != "fm":
-        raise ValueError("only --mode fm is implemented; DDPM remains the comparison baseline")
+    if args.mode not in {"fm", "ddpm"}:
+        raise ValueError("--mode must be fm or ddpm")
     if args.epochs <= 0 or args.max_train <= 0 or args.max_validation <= 0:
         raise ValueError("epochs and sample limits must be positive")
     random.seed(args.seed)
@@ -135,10 +177,21 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         torch.cuda.manual_seed_all(args.seed)
     device = torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
-    model_cfg = OmegaConf.load(Path(__file__).parents[1] / "configs/model/tax3dv2_fm.yaml")
-    # The prior is part of the FM checkpoint contract.  Persist the CLI value
-    # in the resolved config rather than relying on a runtime-only override.
-    model_cfg.fm_noise_scale = float(args.noise_scale)
+    model_name = "tax3dv2_fm.yaml" if args.mode == "fm" else "tax3dv2.yaml"
+    model_cfg = OmegaConf.load(Path(__file__).parents[1] / "configs/model" / model_name)
+    noise_scale = float(
+        args.noise_scale
+        if args.noise_scale is not None
+        else (0.08 if args.mode == "fm" else model_cfg.diff_noise_scale)
+    )
+    if not np.isfinite(noise_scale) or noise_scale <= 0:
+        raise ValueError("noise scale must be finite and positive")
+    if args.mode == "fm":
+        # The prior is part of the FM checkpoint contract.  Persist the CLI
+        # value rather than relying on a runtime-only override.
+        model_cfg.fm_noise_scale = noise_scale
+    else:
+        model_cfg.diff_noise_scale = noise_scale
     training_cfg = OmegaConf.load(
         Path(__file__).parents[1] / "configs/training/placegen_taxdpd_tax3dv2_fm.yaml"
     )
@@ -150,7 +203,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     cfg = OmegaConf.create({"model": model_cfg, "training": training_cfg, "dataset": dataset_cfg})
     _, module = create_model(cfg)
     module = module.to(device)
-    module.noise_scale = float(args.noise_scale)
+    module.noise_scale = noise_scale
     train_dataset = PlaceGenTaxDpdDataset(dataset_cfg.data_dir, dataset_cfg, "train")
     validation_dataset = PlaceGenTaxDpdDataset(dataset_cfg.data_dir, dataset_cfg, "val")
     train_count = min(len(train_dataset), args.max_train)
@@ -183,7 +236,12 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         for offset, index in enumerate(order):
             item = _batch(train_dataset, index, device)
             optimizer.zero_grad(set_to_none=True)
-            loss = _loss_for_item(module, item, seed=args.seed + epoch * 100000 + offset)
+            loss = _loss_for_item(
+                module,
+                item,
+                seed=args.seed + epoch * 100000 + offset,
+                mode=args.mode,
+            )
             if not bool(torch.isfinite(loss)):
                 raise FloatingPointError(f"non-finite train loss at epoch={epoch}, index={index}")
             loss.backward()
@@ -195,7 +253,12 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         with torch.no_grad():
             for offset, index in enumerate(range(validation_count)):
                 item = _batch(validation_dataset, index, device)
-                value = _loss_for_item(module, item, seed=args.seed + 900000 + epoch * 1000 + offset)
+                value = _loss_for_item(
+                    module,
+                    item,
+                    seed=args.seed + 900000 + epoch * 1000 + offset,
+                    mode=args.mode,
+                )
                 validation_values.append(float(value.detach().cpu()))
         train_mean = float(np.mean(train_values))
         validation_mean = float(np.mean(validation_values))
@@ -214,9 +277,11 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         raise FileExistsError("checkpoint or manifest output already exists; choose a new run directory")
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
     state_sha256 = state_dict_sha256(best_state)
+    checkpoint_schema = FM_CHECKPOINT_SCHEMA if args.mode == "fm" else DDPM_CHECKPOINT_SCHEMA
+    model_capability = FM_MODEL_CAPABILITY if args.mode == "fm" else DDPM_MODEL_CAPABILITY
     checkpoint_payload = {
-        "schema": FM_CHECKPOINT_SCHEMA,
-        "model": FM_MODEL_CAPABILITY,
+        "schema": checkpoint_schema,
+        "model": model_capability,
         "config": OmegaConf.to_container(cfg, resolve=True),
         "dataset": {
             "training_manifest_sha256": training_manifest_sha,
@@ -245,21 +310,35 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     manifest = {
         "profile": "placegen.tax3dv2-training-run/0.1",
         "mode": args.mode,
-        "model": "TAX3Dv2-fixed-frame-euclidean-condot-fm",
-        "checkpoint_schema": FM_CHECKPOINT_SCHEMA,
-        "model_capability": FM_MODEL_CAPABILITY,
+        "model": (
+            "TAX3Dv2-fixed-frame-euclidean-condot-fm"
+            if args.mode == "fm"
+            else "TAX3Dv2-fixed-frame-DDPM"
+        ),
+        "checkpoint_schema": checkpoint_schema,
+        "model_capability": model_capability,
         "architecture": {
             "point_encoder": "pn2",
             "joint_encode": True,
-            "learn_sigma": False,
-            "rotation_corruption": False,
-            "fm_solver": model_cfg.fm_solver,
-            "fm_steps": int(model_cfg.fm_steps),
+            "learn_sigma": bool(model_cfg.learn_sigma),
+            "rotation_corruption": bool(model_cfg.diff_rotation_noise_scale),
+            **(
+                {
+                    "fm_solver": model_cfg.fm_solver,
+                    "fm_steps": int(model_cfg.fm_steps),
+                }
+                if args.mode == "fm"
+                else {
+                    "diffusion_steps": int(model_cfg.diff_train_steps),
+                    "diffusion_inference_steps": int(model_cfg.diff_inference_steps),
+                    "rotation_noise_scale_deg": float(model_cfg.diff_rotation_noise_scale),
+                }
+            ),
         },
         "data_root": str(Path(args.data_root).expanduser().resolve()),
         "train_count": train_count,
         "validation_count": validation_count,
-        "noise_scale": module.noise_scale,
+        "noise_scale": noise_scale,
         "learning_rate": args.learning_rate,
         "epochs": args.epochs,
         "seed": args.seed,
@@ -291,15 +370,14 @@ def main() -> int:
     parser.add_argument("--output-manifest", type=Path)
     parser.add_argument("--training-manifest", type=Path)
     parser.add_argument("--inference-manifest", type=Path)
-    parser.add_argument("--mode", choices=("fm",), default="fm")
+    parser.add_argument("--mode", choices=("fm", "ddpm"), default="fm")
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max-train", type=int, default=72)
     parser.add_argument("--max-validation", type=int, default=12)
     parser.add_argument("--learning-rate", type=float, default=1.0e-4)
-    # With the explicit TAX-DPD 15x coordinate frame, 0.08 is an empirically
-    # calibrated development prior (roughly 5.3 mm in PlaceGen metres).  The
-    # value is recorded in the run manifest and must not be tuned on final test.
-    parser.add_argument("--noise-scale", type=float, default=0.08)
+    # Default: FM=0.08 in the explicit 15x coordinate frame; DDPM=the released
+    # tax3dv2 config value (1.0).  Every resolved value is stored in the run.
+    parser.add_argument("--noise-scale", type=float)
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=20260831)
     parser.add_argument("--device")
