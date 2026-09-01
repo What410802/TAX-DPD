@@ -178,7 +178,18 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     device = torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
     model_name = "tax3dv2_fm.yaml" if args.mode == "fm" else "tax3dv2.yaml"
-    model_cfg = OmegaConf.load(Path(__file__).parents[1] / "configs/model" / model_name)
+    model_cfg_path = (
+        Path(args.model_config).expanduser().resolve(strict=True)
+        if args.model_config is not None
+        else Path(__file__).parents[1] / "configs/model" / model_name
+    )
+    model_cfg = OmegaConf.load(model_cfg_path)
+    if args.point_encoder is not None:
+        model_cfg.point_encoder = args.point_encoder
+    if args.utonia_checkpoint is not None:
+        model_cfg.utonia_checkpoint = str(
+            Path(args.utonia_checkpoint).expanduser().resolve(strict=True)
+        )
     noise_scale = float(
         args.noise_scale
         if args.noise_scale is not None
@@ -318,7 +329,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         "checkpoint_schema": checkpoint_schema,
         "model_capability": model_capability,
         "architecture": {
-            "point_encoder": "pn2",
+            "point_encoder": str(model_cfg.point_encoder),
             "joint_encode": True,
             "learn_sigma": bool(model_cfg.learn_sigma),
             "rotation_corruption": bool(model_cfg.diff_rotation_noise_scale),
@@ -333,6 +344,16 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
                     "diffusion_inference_steps": int(model_cfg.diff_inference_steps),
                     "rotation_noise_scale_deg": float(model_cfg.diff_rotation_noise_scale),
                 }
+            ),
+            **(
+                {
+                    "utonia_checkpoint": str(model_cfg.utonia_checkpoint),
+                    "utonia_input_scale_factor": float(model_cfg.utonia_input_scale_factor),
+                    "utonia_transform_scale": float(model_cfg.utonia_transform_scale),
+                    "utonia_enable_flash": bool(model_cfg.utonia_enable_flash),
+                }
+                if str(model_cfg.point_encoder) == "utonia"
+                else {}
             ),
         },
         "data_root": str(Path(args.data_root).expanduser().resolve()),
@@ -371,6 +392,13 @@ def main() -> int:
     parser.add_argument("--training-manifest", type=Path)
     parser.add_argument("--inference-manifest", type=Path)
     parser.add_argument("--mode", choices=("fm", "ddpm"), default="fm")
+    parser.add_argument(
+        "--model-config",
+        type=Path,
+        help="optional resolved model config; useful for the Utonia backend",
+    )
+    parser.add_argument("--point-encoder", choices=("pn2", "utonia"))
+    parser.add_argument("--utonia-checkpoint", type=Path)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max-train", type=int, default=72)
     parser.add_argument("--max-validation", type=int, default=12)

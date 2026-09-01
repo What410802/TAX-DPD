@@ -1,9 +1,11 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Callable, Optional
+
 import torch
 import torch.nn as nn
-import torch_geometric.data as tgd
 import numpy as np
-
-from non_rigid.nets.pn2 import PN2Dense, PN2DenseParams
 
 from functools import partial
 
@@ -28,6 +30,11 @@ def pn2_encoder(in_channels, out_channels, model_cfg):
     """
     PointNet++ encoder for point clouds.
     """
+    # Keep PointNet++ dependencies lazy so the optional Utonia backend can be
+    # imported in its standalone CUDA image without rpad/torch-geometric.
+    import torch_geometric.data as tgd
+    from non_rigid.nets.pn2 import PN2Dense, PN2DenseParams
+
     pn2_params = PN2DenseParams()
     # if model_cfg.object_scale is not None or model_cfg.scene_scale is not None:
     if model_cfg.object_scale is not None:
@@ -71,6 +78,187 @@ def pn2_encoder(in_channels, out_channels, model_cfg):
     
     return PN2DenseWrapper(in_channels=in_channels, out_channels=out_channels, p=pn2_params)
 
+
+class UtoniaSlotFeatureEncoder(nn.Module):
+    """Frozen Utonia encoder with an ordered-slot output contract.
+
+    Utonia is an optional runtime dependency and is imported only when this
+    backend is selected.  Coordinates are converted from TAX-DPD's numeric
+    frame back to metres before Utonia's documented transform; missing color
+    and normal modalities are represented by zeros.  The backbone is frozen
+    and a small trainable 1x1 projection maps its 576 channels to DiT width.
+    """
+
+    def __init__(
+        self,
+        hidden_size,
+        model_cfg,
+        *,
+        backbone: Optional[nn.Module] = None,
+        transform: Optional[Callable] = None,
+    ):
+        super().__init__()
+        self.input_scale_factor = float(
+            getattr(model_cfg, "utonia_input_scale_factor", 15.0)
+        )
+        self.transform_scale = float(getattr(model_cfg, "utonia_transform_scale", 0.5))
+        if not np.isfinite(self.input_scale_factor) or self.input_scale_factor <= 0:
+            raise ValueError("utonia_input_scale_factor must be finite and positive")
+        if not np.isfinite(self.transform_scale) or self.transform_scale <= 0:
+            raise ValueError("utonia_transform_scale must be finite and positive")
+
+        self._external_transform = transform
+        if backbone is None:
+            checkpoint = getattr(model_cfg, "utonia_checkpoint", None)
+            if not checkpoint:
+                raise ValueError(
+                    "point_encoder=utonia requires model.utonia_checkpoint"
+                )
+            try:
+                import utonia
+            except ImportError as error:
+                raise ImportError(
+                    "point_encoder=utonia requires the Utonia runtime; "
+                    "use the B300 image or install its CUDA extensions"
+                ) from error
+            custom_config = dict(
+                enc_patch_size=[1024 for _ in range(5)],
+                enable_flash=bool(getattr(model_cfg, "utonia_enable_flash", False)),
+            )
+            backbone = utonia.load(str(Path(checkpoint)), custom_config=custom_config)
+            if transform is None:
+                transform = utonia.transform.default(
+                    scale=self.transform_scale,
+                    apply_z_positive=True,
+                    normalize_coord=False,
+                )
+                self._external_transform = transform
+        self.backbone = backbone.eval()
+        for parameter in self.backbone.parameters():
+            parameter.requires_grad_(False)
+        self.projection = nn.Conv1d(576, hidden_size, kernel_size=1)
+
+    def _transform(self, coordinates):
+        if self._external_transform is None:
+            raise RuntimeError("Utonia transform is not configured")
+        # Importing these helpers lazily keeps the baseline importable without
+        # Utonia's CUDA extensions.
+        from non_rigid.models.utonia_slot_adapter import build_utonia_input
+
+        points = build_utonia_input(
+            (coordinates.detach().float().cpu().numpy() / self.input_scale_factor)
+            .astype(np.float32, copy=False)
+        )
+        return self._external_transform(points)
+
+    def forward(self, x):
+        if x.ndim != 3 or x.shape[1] < 3 or x.shape[2] < 4:
+            raise ValueError("Utonia slot encoder expects [B, C>=3, N>=4]")
+        outputs = []
+        for coordinates in x[:, :3, :].permute(0, 2, 1):
+            point = self._transform(coordinates)
+            for key, value in tuple(point.items()):
+                if isinstance(value, torch.Tensor):
+                    point[key] = value.to(device=x.device, non_blocking=True)
+            with torch.inference_mode():
+                encoded = self.backbone(point)
+                from non_rigid.models.utonia_slot_adapter import upcast_slot_features
+
+                slot_features = upcast_slot_features(encoded)
+            if slot_features.shape[0] != x.shape[2] or slot_features.shape[1] != 576:
+                raise ValueError(
+                    "Utonia must return one 576-D feature per original point slot"
+                )
+            outputs.append(slot_features)
+        features = torch.stack(outputs, dim=0).permute(0, 2, 1)
+        return self.projection(features)
+
+
+class UtoniaJointFeatureEncoder(nn.Module):
+    """TAX3Dv2 joint encoder using shared frozen Utonia geometry features.
+
+    Action and anchor clouds are encoded independently so role identity and
+    point-slot counts remain explicit.  The dynamic flow/shape channels are
+    deliberately kept in a small MLP; they are not presented as Utonia color
+    or normal modalities.
+    """
+
+    def __init__(self, in_channels, hidden_size, model_cfg, *, slot_encoder=None):
+        super().__init__()
+        del in_channels
+        self.model_cfg = model_cfg
+        self.hidden_size = hidden_size
+        self.geometry_encoder = (
+            slot_encoder
+            if slot_encoder is not None
+            else UtoniaSlotFeatureEncoder(hidden_size, model_cfg)
+        )
+        self.flow_feature_encoder = mlp_encoder(9, hidden_size)
+        self.action_mixer = mlp_encoder(3 * hidden_size, hidden_size)
+        self.action_role = nn.Parameter(torch.zeros(1, hidden_size, 1))
+        self.anchor_role = nn.Parameter(torch.zeros(1, hidden_size, 1))
+
+    def forward(self, x, y, x0):
+        if self.model_cfg.type == "flow":
+            x_flow = x
+            x_recon = x + x0
+        else:
+            x_flow = x - x0
+            x_recon = x
+        action_size = x0.shape[-1]
+        action_enc = self.geometry_encoder(x0) + self.action_role
+        pred_action_enc = self.geometry_encoder(x_recon) + self.action_role
+        anchor_pred_enc = self.geometry_encoder(y) + self.anchor_role
+
+        shape = x_recon - torch.mean(x_recon, dim=2, keepdim=True)
+        flow_zeromean = x_flow - torch.mean(x_flow, dim=2, keepdim=True)
+        feature_enc = self.flow_feature_encoder(
+            torch.cat([shape, x_flow, flow_zeromean], dim=1)
+        )
+        x_enc = self.action_mixer(
+            torch.cat([action_enc, pred_action_enc, feature_enc], dim=1)
+        ).permute(0, 2, 1)
+        return x_enc, anchor_pred_enc.permute(0, 2, 1)
+
+
+class UtoniaDisjointFeatureEncoder(nn.Module):
+    """Disjoint counterpart retained for non-joint TAX3Dv2 variants."""
+
+    def __init__(self, in_channels, hidden_size, model_cfg, *, slot_encoder=None):
+        super().__init__()
+        del in_channels
+        self.model_cfg = model_cfg
+        self.hidden_size = hidden_size
+        self.geometry_encoder = (
+            slot_encoder
+            if slot_encoder is not None
+            else UtoniaSlotFeatureEncoder(hidden_size, model_cfg)
+        )
+        self.shape_encoder = mlp_encoder(3, hidden_size)
+        self.flow_zeromean_encoder = mlp_encoder(3, hidden_size)
+        self.x_corr_encoder = mlp_encoder(3, hidden_size)
+        self.action_mixer = mlp_encoder(5 * hidden_size, hidden_size)
+
+    def forward(self, x, y, x0):
+        if self.model_cfg.type == "flow":
+            x_flow = x
+            x_recon = x + x0
+        else:
+            x_flow = x - x0
+            x_recon = x
+        x_enc = self.geometry_encoder(x)
+        x0_enc = self.geometry_encoder(x0)
+        y_enc = self.geometry_encoder(y).permute(0, 2, 1)
+        shape_enc = self.shape_encoder(x_recon - x_recon.mean(dim=2, keepdim=True))
+        flow_zeromean_enc = self.flow_zeromean_encoder(
+            x_flow - x_flow.mean(dim=2, keepdim=True)
+        )
+        x_corr_enc = self.x_corr_encoder(x_recon if self.model_cfg.type == "flow" else x_flow)
+        x_enc = self.action_mixer(
+            torch.cat([x_enc, x0_enc, shape_enc, flow_zeromean_enc, x_corr_enc], dim=1)
+        ).permute(0, 2, 1)
+        return x_enc, y_enc
+
 #################################################################################
 #                                 Feature Encoders                              #
 #################################################################################
@@ -84,6 +272,12 @@ class DisjointFeatureEncoder(nn.Module):
         self.in_channels = in_channels
         self.hidden_size = hidden_size
         self.model_cfg = model_cfg
+
+        if self.model_cfg.point_encoder == "utonia":
+            self._utonia_encoder = UtoniaDisjointFeatureEncoder(
+                in_channels, hidden_size, model_cfg
+            )
+            return
 
         # Initializing point cloud encoder wrapper.
         if self.model_cfg.point_encoder == "mlp":
@@ -111,6 +305,8 @@ class DisjointFeatureEncoder(nn.Module):
         """
         TODO: fill this out
         """
+        if hasattr(self, "_utonia_encoder"):
+            return self._utonia_encoder(x, y, x0)
         if self.model_cfg.type == "flow":
             x_flow = x
             x_recon = x + x0
@@ -154,6 +350,12 @@ class JointFeatureEncoder(nn.Module):
         self.hidden_size = hidden_size
         self.model_cfg = model_cfg
 
+        if self.model_cfg.point_encoder == "utonia":
+            self._utonia_encoder = UtoniaJointFeatureEncoder(
+                in_channels, hidden_size, model_cfg
+            )
+            return
+
         # Initializing point cloud encoder wrapper.
         if self.model_cfg.point_encoder == "mlp":
             encoder_fn = partial(mlp_encoder, in_channels=self.in_channels)
@@ -180,6 +382,8 @@ class JointFeatureEncoder(nn.Module):
         """
         TODO: fill this out
         """
+        if hasattr(self, "_utonia_encoder"):
+            return self._utonia_encoder(x, y, x0)
         if self.model_cfg.type == "flow":
             x_flow = x
             x_recon = x + x0

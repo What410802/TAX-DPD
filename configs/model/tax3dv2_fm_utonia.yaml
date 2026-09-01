@@ -1,0 +1,45 @@
+# TAX3Dv2 Euclidean FM with a shared frozen Utonia/PTv3 geometry encoder.
+# This config is runnable only in the Utonia CUDA runtime; the baseline
+# PointNet++ config remains independent and unchanged.
+name: tax3dv2_fm
+type: point
+size: xS
+in_channels: 3
+learn_sigma: false
+point_encoder: utonia
+feature: true
+joint_encode: true
+rel_pos: false
+rotary: false
+scene_anchor: false
+frame_type: fixed
+one_hot_recon: true
+zero_shape: true
+
+pred_frame: anchor_center
+noisy_goal_scale: 0.0
+action_context_frame: action_center
+object_scale: null
+scene_scale: null
+pcd_scale: 3.0
+
+diff_train_steps: 100
+diff_inference_steps: 100
+diff_noise_schedule: linear
+diff_noise_scale: 1.0
+diff_type: flow_matching_condot
+diff_translation_noise_scale: false
+diff_rotation_noise_scale: false
+time_based_weighting: false
+
+fm_steps: 20
+fm_solver: heun
+fm_time_scale: 100.0
+fm_noise_scale: 0.08
+
+# Runtime-only Utonia settings.  The checkpoint is deliberately supplied via
+# CLI so the path cannot be mistaken for a portable repository asset.
+utonia_checkpoint: null
+utonia_input_scale_factor: 15.0
+utonia_transform_scale: 0.5
+utonia_enable_flash: false
