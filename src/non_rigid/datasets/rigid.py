@@ -64,6 +64,9 @@ class PlaceGenTaxDpdDataset(data.Dataset):
             self.length = len(self.demo_files)
         self.sample_size_action = int(dataset_cfg.sample_size_action)
         self.sample_size_anchor = int(dataset_cfg.sample_size_anchor)
+        self.scale_factor = float(getattr(dataset_cfg, "pcd_scale_factor", 1.0))
+        if not np.isfinite(self.scale_factor) or self.scale_factor <= 0:
+            raise ValueError("pcd_scale_factor must be finite and positive")
 
     def __len__(self):
         return self.length
@@ -124,9 +127,12 @@ class PlaceGenTaxDpdDataset(data.Dataset):
         if sample_id.ndim != 0 or sample_id.dtype.kind not in "SU":
             raise ValueError("shapenet_id must be a pickle-free string scalar")
 
-        action_pc = torch.from_numpy(action)
-        anchor_pc = torch.from_numpy(anchor)
-        goal_action_pc = torch.from_numpy(goal)
+        # TAX-DPD's released RPDiff configs use pcd_scale_factor=15.0.  Keep
+        # this conversion explicit at the data seam so Gaussian/FM noise and
+        # PointNet++ receptive fields share the same numerical scale.
+        action_pc = torch.from_numpy(action) * self.scale_factor
+        anchor_pc = torch.from_numpy(anchor) * self.scale_factor
+        goal_action_pc = torch.from_numpy(goal) * self.scale_factor
         scene_center = torch.cat((action_pc, anchor_pc), dim=0).mean(dim=0)
         action_pc = action_pc - scene_center
         anchor_pc = anchor_pc - scene_center
@@ -144,7 +150,10 @@ class PlaceGenTaxDpdDataset(data.Dataset):
             "seg_anchor": torch.ones(self.sample_size_anchor, dtype=torch.int32),
             "T_goal2world": translation.get_matrix().squeeze(0),
             "T_action2world": translation.get_matrix().squeeze(0),
-            "T_action2goal": torch.from_numpy(target_pose @ np.linalg.inv(source_pose)),
+            "T_action2goal": torch.from_numpy(
+                np.asarray(target_pose @ np.linalg.inv(source_pose), dtype=np.float32)
+            ),
+            "rpdiff_pcd_scale_factor": torch.tensor(self.scale_factor, dtype=torch.float32),
             "source_world_from_object": source_pose_tensor,
             "target_world_from_object": target_pose_tensor,
             "sample_index": torch.tensor(index % len(self.demo_files), dtype=torch.int64),

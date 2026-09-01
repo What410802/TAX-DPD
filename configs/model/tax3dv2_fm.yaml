@@ -37,3 +37,6 @@ fm_steps: 20
 fm_solver: heun
 # Preserve the released DiT time-embedding scale while allowing fractional time.
 fm_time_scale: 100.0
+# Prior standard deviation in the 15x TAX-DPD coordinate frame.  This is a
+# development calibration, not the unrecovered official task statistic.
+fm_noise_scale: 0.08

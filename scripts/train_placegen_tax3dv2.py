@@ -178,7 +178,10 @@ def main() -> int:
     parser.add_argument("--max-train", type=int, default=72)
     parser.add_argument("--max-validation", type=int, default=12)
     parser.add_argument("--learning-rate", type=float, default=1.0e-4)
-    parser.add_argument("--noise-scale", type=float, default=0.02)
+    # With the explicit TAX-DPD 15x coordinate frame, 0.08 is an empirically
+    # calibrated development prior (roughly 5.3 mm in PlaceGen metres).  The
+    # value is recorded in the run manifest and must not be tuned on final test.
+    parser.add_argument("--noise-scale", type=float, default=0.08)
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=20260831)
     parser.add_argument("--device")

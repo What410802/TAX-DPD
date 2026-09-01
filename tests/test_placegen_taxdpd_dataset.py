@@ -18,6 +18,7 @@ def _config():
         test_dataset_size=None,
         sample_size_action=4,
         sample_size_anchor=4,
+        pcd_scale_factor=15.0,
     )
 
 
@@ -45,7 +46,7 @@ def _write(root, *, bad_object: bool = False):
 def test_loader_preserves_ordered_flow_and_uses_joint_scene_center(tmp_path) -> None:
     _write(tmp_path)
     item = PlaceGenTaxDpdDataset(tmp_path, _config(), "train")[0]
-    expected_flow = torch.tensor([0.1, -0.2, 0.3]).expand(4, 3)
+    expected_flow = torch.tensor([1.5, -3.0, 4.5]).expand(4, 3)
     assert torch.allclose(item["flow"], expected_flow)
     assert torch.allclose(
         torch.cat((item["pc_action"], item["pc_anchor"]), dim=0).mean(dim=0),
@@ -53,6 +54,7 @@ def test_loader_preserves_ordered_flow_and_uses_joint_scene_center(tmp_path) -> 
         atol=1.0e-7,
     )
     assert torch.allclose(item["pc"] - item["pc_action"], expected_flow)
+    assert item["rpdiff_pcd_scale_factor"].item() == pytest.approx(15.0)
 
 
 def test_loader_maps_validation_directory_and_rejects_pickle(tmp_path) -> None:
@@ -63,3 +65,11 @@ def test_loader_maps_validation_directory_and_rejects_pickle(tmp_path) -> None:
     _write(bad_root, bad_object=True)
     with pytest.raises(ValueError, match="pickle-free"):
         PlaceGenTaxDpdDataset(bad_root, _config(), "train")[0]
+
+
+def test_loader_requires_positive_scale_factor(tmp_path) -> None:
+    _write(tmp_path)
+    config = _config()
+    config.pcd_scale_factor = 0.0
+    with pytest.raises(ValueError, match="pcd_scale_factor"):
+        PlaceGenTaxDpdDataset(tmp_path, config, "train")

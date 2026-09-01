@@ -22,7 +22,10 @@ downsample_type: none
 pred_frame: null
 noisy_goal_scale: null
 action_context_frame: null
-pcd_scale: 1.0
+# Match released RPDiff/rigid_point configs.  PlaceGen source artifacts are in
+# metres; the loader presents model tensors in the 15x TAX-DPD numeric frame.
+pcd_scale: 3.0
+pcd_scale_factor: 15.0
 
 # The first controlled comparison uses already-materialized noisy RGB-D
 # observations. Extra geometric augmentation is a later isolated variable.
