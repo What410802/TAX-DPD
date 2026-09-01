@@ -221,6 +221,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         "dataset": {
             "training_manifest_sha256": training_manifest_sha,
             "inference_manifest_sha256": inference_manifest_sha,
+            "split_assignment_sha256": training_manifest["split_assignment"]["manifest_sha256"],
+            "native_dataset_sha256": training_manifest["split_assignment"]["native_dataset_sha256"],
             "data_root": str(Path(args.data_root).expanduser().resolve()),
             "point_counts": dict(training_manifest["point_counts"]),
             "split_counts": dict(training_manifest["split_counts"]),

@@ -80,6 +80,8 @@ def validate_fm_checkpoint_payload(payload: Any) -> dict[str, Any]:
     dataset_required = {
         "training_manifest_sha256",
         "inference_manifest_sha256",
+        "split_assignment_sha256",
+        "native_dataset_sha256",
         "data_root",
         "point_counts",
         "split_counts",
@@ -88,6 +90,8 @@ def validate_fm_checkpoint_payload(payload: Any) -> dict[str, Any]:
         raise ValueError("FM checkpoint dataset provenance fields are invalid")
     _sha256(dataset["training_manifest_sha256"], "training_manifest_sha256")
     _sha256(dataset["inference_manifest_sha256"], "inference_manifest_sha256")
+    _sha256(dataset["split_assignment_sha256"], "split_assignment_sha256")
+    _sha256(dataset["native_dataset_sha256"], "native_dataset_sha256")
     if not isinstance(dataset["data_root"], str) or not dataset["data_root"]:
         raise ValueError("checkpoint data_root must be a non-empty string")
     if not isinstance(dataset["point_counts"], dict) or set(dataset["point_counts"]) != {
