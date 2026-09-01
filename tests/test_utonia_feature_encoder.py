@@ -11,6 +11,7 @@ from non_rigid.models.encoders import (
     UtoniaJointFeatureEncoder,
     UtoniaSlotFeatureEncoder,
 )
+from non_rigid.models.tax3d_v2 import TAX3Dv2FixedFrameFlowMatchingModule
 
 
 class FakeSlotEncoder(nn.Module):
@@ -94,6 +95,40 @@ def test_frozen_backbone_stays_eval_when_parent_trains() -> None:
     encoder.train()
     assert encoder.training is True
     assert backbone.training is False
+
+
+def test_fm_velocity_model_prepares_utonia_context_once_for_many_nfes() -> None:
+    class FeatureEncoder:
+        def __init__(self):
+            self.calls = 0
+
+        def prepare_static_context(self, x0, y):
+            self.calls += 1
+            return (x0[:, :1], y[:, :1])
+
+    class Network:
+        def __init__(self):
+            self.dit = SimpleNamespace(feature_encoder=FeatureEncoder())
+            self.static_ids: list[int] = []
+
+        def __call__(self, frame, shape, time, *, static_geometry, **kwargs):
+            del time, kwargs
+            self.static_ids.append(id(static_geometry))
+            return torch.zeros_like(frame), torch.zeros_like(shape)
+
+    network = Network()
+    module = SimpleNamespace(
+        network=network,
+        model_cfg=SimpleNamespace(point_encoder="utonia"),
+        fm_time_scale=100.0,
+    )
+    kwargs = {"x0": torch.randn(1, 3, 4), "y": torch.randn(1, 3, 5)}
+    velocity = TAX3Dv2FixedFrameFlowMatchingModule._velocity_model(module, kwargs)
+    state = torch.randn(1, 3, 5)
+    velocity(state, torch.tensor([0.25]))
+    velocity(state, torch.tensor([0.75]))
+    assert network.dit.feature_encoder.calls == 1
+    assert len(set(network.static_ids)) == 1
 
 
 def test_model_cfg_without_runtime_checkpoint_fails_closed() -> None:
