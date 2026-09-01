@@ -469,6 +469,12 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
         self.fm_steps = int(cfg.model.fm_steps)
         self.fm_solver = str(cfg.model.fm_solver)
         self.fm_time_scale = float(cfg.model.fm_time_scale)
+        # Unlike the DDPM module, FM's source prior is part of the model
+        # contract.  Keep it in the resolved config so checkpoint reloads do
+        # not silently fall back to the historical ``diff_noise_scale``.
+        self.noise_scale = float(
+            getattr(cfg.model, "fm_noise_scale", self.noise_scale)
+        )
         if self.fm_steps <= 0:
             raise ValueError("fm_steps must be positive")
         if self.fm_solver not in {"euler", "heun"}:
@@ -519,6 +525,100 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
             return torch.cat((frame_velocity, shape_velocity), dim=2)
 
         return velocity
+
+    @torch.no_grad()
+    def sample_candidates(
+        self,
+        pc_action: torch.Tensor,
+        pc_anchor: torch.Tensor,
+        num_trials: int = 1,
+        seed: Optional[int] = None,
+    ) -> torch.Tensor:
+        """Sample target-free goal point clouds with the FM ODE.
+
+        Inputs and outputs use the centered TAX-DPD numeric frame.  Every
+        candidate owns an independent RNG stream (``seed + i``), matching the
+        fixed-frame DDPM seam and making a request for more candidates prefix
+        stable.  No target point cloud is consulted here.
+        """
+
+        if (
+            isinstance(num_trials, bool)
+            or not isinstance(num_trials, int)
+            or num_trials <= 0
+        ):
+            raise ValueError("num_trials must be a positive integer")
+        if seed is not None and (
+            isinstance(seed, bool) or not isinstance(seed, int) or seed < 0
+        ):
+            raise ValueError("seed must be a non-negative integer or None")
+        for name, points in (("pc_action", pc_action), ("pc_anchor", pc_anchor)):
+            if not isinstance(points, torch.Tensor):
+                raise TypeError(f"{name} must be a torch.Tensor")
+            if points.ndim != 3 or points.shape[-1] != 3:
+                raise ValueError(f"{name} must have shape [B, N, 3]")
+            if points.shape[0] <= 0 or points.shape[1] < 4:
+                raise ValueError(
+                    f"{name} must contain a non-empty batch and at least four points"
+                )
+            if not torch.isfinite(points).all():
+                raise ValueError(f"{name} contains non-finite values")
+        if pc_action.shape[0] != pc_anchor.shape[0]:
+            raise ValueError("pc_action and pc_anchor batch sizes must match")
+
+        device = self.device
+        action = pc_action.to(device)
+        anchor = pc_anchor.to(device)
+        batch_size, sample_size = action.shape[:2]
+        model_kwargs = {
+            "y": anchor.permute(0, 2, 1),
+            "x0": action.permute(0, 2, 1),
+        }
+        cuda_devices = []
+        if device.type == "cuda":
+            cuda_devices = [
+                torch.cuda.current_device()
+                if device.index is None
+                else int(device.index)
+            ]
+
+        was_training = self.training
+        self.eval()
+        candidates = []
+        try:
+            for trial_index in range(num_trials):
+                candidate_seed = None if seed is None else seed + trial_index
+                with torch.random.fork_rng(
+                    devices=cuda_devices, enabled=candidate_seed is not None
+                ):
+                    if candidate_seed is not None:
+                        if device.type == "cuda":
+                            with torch.cuda.device(cuda_devices[0]):
+                                torch.cuda.manual_seed(candidate_seed)
+                        else:
+                            torch.manual_seed(candidate_seed)
+                    source = self._source_from_observation(
+                        action.permute(0, 2, 1)
+                    )
+                    final = integrate_velocity(
+                        self._velocity_model(model_kwargs),
+                        source,
+                        steps=self.fm_steps,
+                        method=self.fm_solver,
+                    )
+                    candidate = final.permute(0, 2, 1)
+                    if (
+                        candidate.shape != action.shape
+                        or not torch.isfinite(candidate).all()
+                    ):
+                        raise RuntimeError(
+                            "FM sampler returned an invalid candidate with shape "
+                            f"{tuple(candidate.shape)}"
+                        )
+                    candidates.append(candidate)
+        finally:
+            self.train(was_training)
+        return torch.stack(candidates, dim=1)
 
     def training_step(self, batch, batch_idx):
         del batch_idx

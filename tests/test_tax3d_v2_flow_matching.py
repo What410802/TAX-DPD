@@ -41,6 +41,12 @@ class _UnusedNetwork(torch.nn.Module):
         raise AssertionError("not called by this contract test")
 
 
+class _ZeroVelocityNetwork(torch.nn.Module):
+    def forward(self, frame, shape, time, **kwargs):
+        del time, kwargs
+        return torch.zeros_like(frame), torch.zeros_like(shape)
+
+
 def test_fm_adapter_requires_three_channel_head_and_no_rotation_corruption() -> None:
     with pytest.raises(ValueError, match="learn_sigma=false"):
         TAX3Dv2FixedFrameFlowMatchingModule(_UnusedNetwork(), _cfg(learn_sigma=True))
@@ -69,3 +75,19 @@ def test_inference_source_shape_can_be_built_from_observation_only() -> None:
     source_frame, source_shape = module._source(observed_action)
     assert source_frame.shape == (2, 3, 1)
     assert source_shape.shape == observed_action.shape
+
+
+def test_fm_sampling_is_target_free_and_seed_prefix_stable() -> None:
+    module = TAX3Dv2FixedFrameFlowMatchingModule(
+        _ZeroVelocityNetwork(), _cfg()
+    )
+    module.noise_scale = 0.08
+    action = torch.linspace(-1.0, 1.0, 24).reshape(2, 4, 3)
+    anchor = torch.linspace(-2.0, 2.0, 30).reshape(2, 5, 3)
+    first = module.sample_candidates(action, anchor, num_trials=2, seed=31)
+    second = module.sample_candidates(action, anchor, num_trials=2, seed=31)
+    extended = module.sample_candidates(action, anchor, num_trials=3, seed=31)
+    assert first.shape == (2, 2, 4, 3)
+    assert torch.equal(first, second)
+    assert torch.equal(first, extended[:, :2])
+    assert torch.isfinite(first).all()

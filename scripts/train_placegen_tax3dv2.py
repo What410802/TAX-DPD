@@ -23,6 +23,11 @@ from torch.utils.data import DataLoader
 from non_rigid.datasets.rigid import PlaceGenTaxDpdDataset
 from non_rigid.models.flow_matching import flow_matching_loss
 from non_rigid.utils.script_utils import create_model
+from non_rigid.utils.placegen_fm_checkpoint import (
+    FM_CHECKPOINT_SCHEMA,
+    FM_MODEL_CAPABILITY,
+)
+from non_rigid.utils.state_digest import state_dict_sha256
 
 
 def _sha256_file(path: Path) -> str:
@@ -31,6 +36,63 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _load_placegen_manifests(
+    data_root: Path,
+    *,
+    training_manifest_path: Path | None,
+    inference_manifest_path: Path | None,
+) -> tuple[dict[str, Any], dict[str, Any], str, str]:
+    """Validate the native PlaceGen export identity without reading targets.
+
+    The current PlaceGen exporter predates TAX-DPD's grouped manifest schema,
+    so this runner records and checks the native ``taxpose-rpdiff`` manifests
+    directly.  Training reads supervision NPZs later through the dataset; the
+    inference manifest is only an identity/provenance fence.
+    """
+
+    training_path = (
+        training_manifest_path
+        or data_root.parent / "manifest.json"
+    ).expanduser().resolve(strict=True)
+    inference_path = (
+        inference_manifest_path
+        or data_root.parent / "inference" / "manifest.json"
+    ).expanduser().resolve(strict=True)
+    training = json.loads(training_path.read_text(encoding="utf-8"))
+    inference = json.loads(inference_path.read_text(encoding="utf-8"))
+    if training.get("profile") != "placegen.taxpose-rpdiff/0.1":
+        raise ValueError("unexpected native PlaceGen training manifest profile")
+    if inference.get("profile") != "placegen.taxpose-inference-index/0.1":
+        raise ValueError("unexpected native PlaceGen inference manifest profile")
+    if training.get("evaluation_valid") is not True or training.get("correlated_split") is not False:
+        raise ValueError("training manifest is not evaluation-valid and disjoint")
+    if inference.get("evaluation_valid") is not True or inference.get("correlated_split") is not False:
+        raise ValueError("inference manifest is not evaluation-valid and disjoint")
+    if inference.get("ground_truth_free") is not True:
+        raise ValueError("inference manifest must be ground-truth-free")
+    if training.get("point_counts") != {"action": 1024, "anchor": 1024}:
+        raise ValueError("unexpected native PlaceGen point counts")
+    if inference.get("point_counts") != training.get("point_counts"):
+        raise ValueError("training/inference point counts differ")
+    split_counts = training.get("split_counts")
+    if split_counts != {"train": 72, "validation": 12, "test": 12}:
+        raise ValueError(f"unexpected native PlaceGen split counts: {split_counts!r}")
+    if inference.get("sample_count") != training.get("sample_count"):
+        raise ValueError("training/inference sample counts differ")
+    training_assignment = training.get("split_assignment", {})
+    inference_assignment = inference.get("split_assignment", {})
+    if inference_assignment.get("manifest_sha256") != training_assignment.get("manifest_sha256"):
+        raise ValueError("native split assignment manifest identity differs")
+    if inference_assignment.get("native_dataset_sha256") != training_assignment.get("native_dataset_sha256"):
+        raise ValueError("native dataset identities differ")
+    return (
+        training,
+        inference,
+        _sha256_file(training_path),
+        _sha256_file(inference_path),
+    )
 
 
 def _batch(dataset: PlaceGenTaxDpdDataset, index: int, device: torch.device) -> dict[str, Any]:
@@ -74,6 +136,9 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     device = torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
     model_cfg = OmegaConf.load(Path(__file__).parents[1] / "configs/model/tax3dv2_fm.yaml")
+    # The prior is part of the FM checkpoint contract.  Persist the CLI value
+    # in the resolved config rather than relying on a runtime-only override.
+    model_cfg.fm_noise_scale = float(args.noise_scale)
     training_cfg = OmegaConf.load(
         Path(__file__).parents[1] / "configs/training/placegen_taxdpd_tax3dv2_fm.yaml"
     )
@@ -92,6 +157,19 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     validation_count = min(len(validation_dataset), args.max_validation)
     if train_count <= 0 or validation_count <= 0:
         raise ValueError("PlaceGen train/validation splits must both be non-empty")
+
+    training_manifest, inference_manifest, training_manifest_sha, inference_manifest_sha = _load_placegen_manifests(
+        Path(args.data_root),
+        training_manifest_path=args.training_manifest,
+        inference_manifest_path=args.inference_manifest,
+    )
+    if training_manifest["point_counts"] != {
+        "action": int(dataset_cfg.sample_size_action),
+        "anchor": int(dataset_cfg.sample_size_anchor),
+    }:
+        raise ValueError("dataset point counts do not match the training manifest")
+    if training_manifest["split_assignment"]["manifest_sha256"] != inference_manifest["split_assignment"]["manifest_sha256"]:
+        raise ValueError("training and inference manifests use different split assignments")
 
     optimizer = torch.optim.Adam(module.parameters(), lr=args.learning_rate)
     best_validation = float("inf")
@@ -135,12 +213,39 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     if checkpoint.exists() or manifest_path.exists():
         raise FileExistsError("checkpoint or manifest output already exists; choose a new run directory")
     checkpoint.parent.mkdir(parents=True, exist_ok=True)
-    torch.save({"state_dict": best_state}, checkpoint)
+    state_sha256 = state_dict_sha256(best_state)
+    checkpoint_payload = {
+        "schema": FM_CHECKPOINT_SCHEMA,
+        "model": FM_MODEL_CAPABILITY,
+        "config": OmegaConf.to_container(cfg, resolve=True),
+        "dataset": {
+            "training_manifest_sha256": training_manifest_sha,
+            "inference_manifest_sha256": inference_manifest_sha,
+            "data_root": str(Path(args.data_root).expanduser().resolve()),
+            "point_counts": dict(training_manifest["point_counts"]),
+            "split_counts": dict(training_manifest["split_counts"]),
+        },
+        "training": {
+            "seed": args.seed,
+            "epochs": args.epochs,
+            "train_count": train_count,
+            "validation_count": validation_count,
+            "best_validation_loss": best_validation,
+            "history": history,
+            "selection_split": "validation",
+            "test_split_used_for_selection": False,
+        },
+        "model_state_dict": best_state,
+        "model_state_sha256": state_sha256,
+    }
+    torch.save(checkpoint_payload, checkpoint)
     checkpoint_sha256 = _sha256_file(checkpoint)
     manifest = {
         "profile": "placegen.tax3dv2-training-run/0.1",
         "mode": args.mode,
         "model": "TAX3Dv2-fixed-frame-euclidean-condot-fm",
+        "checkpoint_schema": FM_CHECKPOINT_SCHEMA,
+        "model_capability": FM_MODEL_CAPABILITY,
         "architecture": {
             "point_encoder": "pn2",
             "joint_encode": True,
@@ -159,6 +264,15 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         "device": str(device),
         "best_validation_loss": best_validation,
         "checkpoint_sha256": checkpoint_sha256,
+        "model_state_sha256": state_sha256,
+        "training_manifest": str(
+            (args.training_manifest or (Path(args.data_root).parent / "manifest.json")).expanduser().resolve()
+        ),
+        "training_manifest_sha256": training_manifest_sha,
+        "inference_manifest": str(
+            (args.inference_manifest or (Path(args.data_root).parent / "inference" / "manifest.json")).expanduser().resolve()
+        ),
+        "inference_manifest_sha256": inference_manifest_sha,
         "history": history,
         "planner_called": False,
         "simulator_called": False,
@@ -173,6 +287,8 @@ def main() -> int:
     parser.add_argument("--data-root", type=Path, required=True)
     parser.add_argument("--output-checkpoint", type=Path, required=True)
     parser.add_argument("--output-manifest", type=Path)
+    parser.add_argument("--training-manifest", type=Path)
+    parser.add_argument("--inference-manifest", type=Path)
     parser.add_argument("--mode", choices=("fm",), default="fm")
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max-train", type=int, default=72)
