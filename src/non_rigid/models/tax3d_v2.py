@@ -606,7 +606,12 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
                         steps=self.fm_steps,
                         method=self.fm_solver,
                     )
-                    candidate = final.permute(0, 2, 1)
+                    # The first state slot is the frame centroid; the
+                    # remaining N slots are zero-mean shape residuals.
+                    # Reconstruct the N-point goal before returning it.
+                    candidate = (
+                        final[:, :, :1] + final[:, :, 1:]
+                    ).permute(0, 2, 1)
                     if (
                         candidate.shape != action.shape
                         or not torch.isfinite(candidate).all()
