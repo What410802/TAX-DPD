@@ -17,8 +17,8 @@ from non_rigid.utils.placegen_fm_checkpoint import (
 from non_rigid.utils.placegen_fm_export import (
     EXPECTED_SPLIT_COUNTS,
     load_fm_observation,
-    load_native_export_identity,
     load_native_inference_index,
+    sha256_file,
 )
 from non_rigid.utils.placegen_fm_prediction import predict_fm_pose_candidates
 
@@ -33,9 +33,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     output = Path(args.output_json).expanduser()
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"refusing to overwrite prediction report: {output}")
-    training_manifest = Path(args.training_manifest).expanduser().resolve(strict=True)
     inference_manifest = Path(args.inference_manifest).expanduser().resolve(strict=True)
-    identity = load_native_export_identity(training_manifest, inference_manifest)
     inference = load_native_inference_index(inference_manifest)
     device = torch.device(args.device)
     if device.type == "cuda" and not torch.cuda.is_available():
@@ -43,9 +41,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     loaded = load_fm_checkpoint(
         args.checkpoint,
         device,
-        expected_training_manifest_sha256=identity.training_manifest_sha256,
-        expected_inference_manifest_sha256=identity.inference_manifest_sha256,
+        expected_inference_manifest_sha256=inference.manifest_sha256,
     )
+    checkpoint_dataset = loaded.payload["dataset"]
+    if checkpoint_dataset["split_assignment_sha256"] != inference.split_assignment_sha256:
+        raise ValueError("checkpoint and inference use different split assignments")
+    if checkpoint_dataset["native_dataset_sha256"] != inference.native_dataset_sha256:
+        raise ValueError("checkpoint and inference use different native datasets")
+    if checkpoint_dataset["point_counts"] != inference.point_counts:
+        raise ValueError("checkpoint and inference use different point counts")
     cfg = loaded.payload["config"]
     scale_factor = float(cfg["dataset"].get("pcd_scale_factor", 1.0))
     if scale_factor <= 0:
@@ -100,16 +104,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "ground_truth_free": True,
         "training_manifest_read": False,
         "target_pose_or_goal_point_cloud_read": False,
-        "training_manifest": str(identity.training_manifest_path),
-        "training_manifest_sha256": identity.training_manifest_sha256,
-        "inference_manifest": str(identity.inference_manifest_path),
-        "inference_manifest_sha256": identity.inference_manifest_sha256,
-        "split_assignment_sha256": identity.split_assignment_sha256,
-        "native_dataset_sha256": identity.native_dataset_sha256,
+        "training_manifest_sha256": checkpoint_dataset["training_manifest_sha256"],
+        "inference_manifest": str(inference.manifest_path),
+        "inference_manifest_sha256": inference.manifest_sha256,
+        "split_assignment_sha256": inference.split_assignment_sha256,
+        "native_dataset_sha256": inference.native_dataset_sha256,
         "checkpoint": str(checkpoint_path),
-        "checkpoint_sha256": __import__("hashlib").sha256(
-            checkpoint_path.read_bytes()
-        ).hexdigest(),
+        "checkpoint_sha256": sha256_file(checkpoint_path),
         "checkpoint_model_state_sha256": loaded.model_state_sha256,
         "checkpoint_reload_verified": True,
         "checkpoint_selection_split": loaded.payload["training"]["selection_split"],
@@ -135,7 +136,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--training-manifest", type=Path, required=True)
     parser.add_argument("--inference-manifest", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
