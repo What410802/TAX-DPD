@@ -15,8 +15,10 @@ class FakeSlotEncoder(nn.Module):
         super().__init__()
         self.projection = nn.Conv1d(3, output_width, 1)
         self.width = width
+        self.call_slot_counts: list[int] = []
 
     def forward(self, value: torch.Tensor) -> torch.Tensor:
+        self.call_slot_counts.append(value.shape[-1])
         return self.projection(value[:, :3, :])
 
 
@@ -25,11 +27,12 @@ def _cfg(point_type: str = "flow") -> SimpleNamespace:
 
 
 def test_joint_utonia_encoder_keeps_role_slots_and_flow_mlp() -> None:
+    slots = FakeSlotEncoder(4)
     encoder = UtoniaJointFeatureEncoder(
         3,
         8,
         _cfg(),
-        slot_encoder=FakeSlotEncoder(4),
+        slot_encoder=slots,
     )
     x0 = torch.randn(2, 3, 4)
     y = torch.randn(2, 3, 5)
@@ -39,6 +42,9 @@ def test_joint_utonia_encoder_keeps_role_slots_and_flow_mlp() -> None:
     assert anchor.shape == (2, 5, 8)
     assert torch.isfinite(action).all()
     assert torch.isfinite(anchor).all()
+    # x0 is one role cloud; reconstructed action+anchor are encoded jointly so
+    # Utonia keeps their cross-role geometry instead of erasing it by centering.
+    assert slots.call_slot_counts == [4, 9]
 
 
 def test_joint_utonia_encoder_does_not_mutate_inputs() -> None:

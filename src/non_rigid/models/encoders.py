@@ -102,6 +102,7 @@ class UtoniaSlotFeatureEncoder(nn.Module):
             getattr(model_cfg, "utonia_input_scale_factor", 15.0)
         )
         self.transform_scale = float(getattr(model_cfg, "utonia_transform_scale", 0.5))
+        self.center_shift = bool(getattr(model_cfg, "utonia_center_shift", False))
         if not np.isfinite(self.input_scale_factor) or self.input_scale_factor <= 0:
             raise ValueError("utonia_input_scale_factor must be finite and positive")
         if not np.isfinite(self.transform_scale) or self.transform_scale <= 0:
@@ -127,11 +128,31 @@ class UtoniaSlotFeatureEncoder(nn.Module):
             )
             backbone = utonia.load(str(Path(checkpoint)), custom_config=custom_config)
             if transform is None:
-                transform = utonia.transform.default(
-                    scale=self.transform_scale,
-                    apply_z_positive=True,
-                    normalize_coord=False,
+                transform_config = [
+                    dict(type="RandomScale", scale=[self.transform_scale, self.transform_scale]),
+                ]
+                if self.center_shift:
+                    transform_config.append(dict(type="CenterShift", apply_z=True))
+                transform_config.extend(
+                    [
+                        dict(
+                            type="GridSample",
+                            grid_size=0.01,
+                            hash_type="fnv",
+                            mode="train",
+                            return_grid_coord=True,
+                            return_inverse=True,
+                        ),
+                        dict(type="NormalizeColor"),
+                        dict(type="ToTensor"),
+                        dict(
+                            type="Collect",
+                            keys=("coord", "grid_coord", "color", "inverse"),
+                            feat_keys=("coord", "color", "normal"),
+                        ),
+                    ]
                 )
+                transform = utonia.transform.Compose(transform_config)
                 self._external_transform = transform
         self.backbone = backbone.eval()
         for parameter in self.backbone.parameters():
@@ -207,8 +228,13 @@ class UtoniaJointFeatureEncoder(nn.Module):
             x_recon = x
         action_size = x0.shape[-1]
         action_enc = self.geometry_encoder(x0) + self.action_role
-        pred_action_enc = self.geometry_encoder(x_recon) + self.action_role
-        anchor_pred_enc = self.geometry_encoder(y) + self.anchor_role
+        # Match TAX3Dv2's one-hot joint branch: reconstruct and anchor are
+        # encoded as one scene, then split back to their original slots. This
+        # preserves cross-role neighborhoods while retaining role identity.
+        action_size = x0.shape[-1]
+        pred_scene_enc = self.geometry_encoder(torch.cat((x_recon, y), dim=2))
+        pred_action_enc = pred_scene_enc[:, :, :action_size] + self.action_role
+        anchor_pred_enc = pred_scene_enc[:, :, action_size:] + self.anchor_role
 
         shape = x_recon - torch.mean(x_recon, dim=2, keepdim=True)
         flow_zeromean = x_flow - torch.mean(x_flow, dim=2, keepdim=True)

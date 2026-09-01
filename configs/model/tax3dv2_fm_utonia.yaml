@@ -42,4 +42,5 @@ fm_noise_scale: 0.08
 utonia_checkpoint: null
 utonia_input_scale_factor: 15.0
 utonia_transform_scale: 0.5
+utonia_center_shift: false
 utonia_enable_flash: false
