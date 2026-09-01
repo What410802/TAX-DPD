@@ -41,6 +41,22 @@ def _summary(values: list[float]) -> dict[str, float]:
     }
 
 
+def _ordered_point_rmse_mm(
+    predicted_world: np.ndarray,
+    target_world: np.ndarray,
+) -> float:
+    """RMS Euclidean point error, matching PlaceGen's common evaluator."""
+
+    if predicted_world.shape != target_world.shape or predicted_world.ndim != 2:
+        raise ValueError("ordered point arrays must have matching [N, D] shapes")
+    if not np.isfinite(predicted_world).all() or not np.isfinite(target_world).all():
+        raise ValueError("ordered point arrays must be finite")
+    return float(
+        np.sqrt(np.mean(np.sum((predicted_world - target_world) ** 2, axis=1)))
+        * 1000.0
+    )
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     output = Path(args.output_json).expanduser()
     if output.exists() or output.is_symlink():
@@ -103,9 +119,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             @ np.linalg.inv(source_pose).T
         )
         predicted_world = (object_points @ predicted_pose.T)[:, :3]
-        ordered_rmse_mm = float(
-            np.sqrt(np.mean((predicted_world - target_world) ** 2)) * 1000.0
-        )
+        ordered_rmse_mm = _ordered_point_rmse_mm(predicted_world, target_world)
         pred_to_target = cKDTree(target_world).query(predicted_world, k=1)[0]
         target_to_pred = cKDTree(predicted_world).query(target_world, k=1)[0]
         symmetric_chamfer_mm = float(
