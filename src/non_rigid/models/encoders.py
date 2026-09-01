@@ -103,6 +103,7 @@ class UtoniaSlotFeatureEncoder(nn.Module):
         )
         self.transform_scale = float(getattr(model_cfg, "utonia_transform_scale", 0.5))
         self.center_shift = bool(getattr(model_cfg, "utonia_center_shift", False))
+        self.transform_seed = int(getattr(model_cfg, "utonia_transform_seed", 1701))
         if not np.isfinite(self.input_scale_factor) or self.input_scale_factor <= 0:
             raise ValueError("utonia_input_scale_factor must be finite and positive")
         if not np.isfinite(self.transform_scale) or self.transform_scale <= 0:
@@ -125,6 +126,7 @@ class UtoniaSlotFeatureEncoder(nn.Module):
             custom_config = dict(
                 enc_patch_size=[1024 for _ in range(5)],
                 enable_flash=bool(getattr(model_cfg, "utonia_enable_flash", False)),
+                shuffle_orders=False,
             )
             backbone = utonia.load(str(Path(checkpoint)), custom_config=custom_config)
             if transform is None:
@@ -159,6 +161,12 @@ class UtoniaSlotFeatureEncoder(nn.Module):
             parameter.requires_grad_(False)
         self.projection = nn.Conv1d(576, hidden_size, kernel_size=1)
 
+    def train(self, mode: bool = True):
+        super().train(mode)
+        # Parent ``model.train()`` must not re-enable Utonia drop path.
+        self.backbone.eval()
+        return self
+
     def _transform(self, coordinates):
         if self._external_transform is None:
             raise RuntimeError("Utonia transform is not configured")
@@ -170,9 +178,17 @@ class UtoniaSlotFeatureEncoder(nn.Module):
             (coordinates.detach().float().cpu().numpy() / self.input_scale_factor)
             .astype(np.float32, copy=False)
         )
-        return self._external_transform(points)
+        # Utonia's documented train-mode GridSample randomly chooses a point
+        # per voxel.  Use an isolated fixed stream so the frozen condition is
+        # repeatable without perturbing the caller's NumPy RNG.
+        state = np.random.get_state()
+        try:
+            np.random.seed(self.transform_seed)
+            return self._external_transform(points)
+        finally:
+            np.random.set_state(state)
 
-    def forward(self, x):
+    def frozen_features(self, x):
         if x.ndim != 3 or x.shape[1] < 3 or x.shape[2] < 4:
             raise ValueError("Utonia slot encoder expects [B, C>=3, N>=4]")
         outputs = []
@@ -191,17 +207,18 @@ class UtoniaSlotFeatureEncoder(nn.Module):
                     "Utonia must return one 576-D feature per original point slot"
                 )
             outputs.append(slot_features)
-        features = torch.stack(outputs, dim=0).permute(0, 2, 1)
-        return self.projection(features)
+        return torch.stack(outputs, dim=0).permute(0, 2, 1)
+
+    def forward(self, x):
+        return self.projection(self.frozen_features(x))
 
 
 class UtoniaJointFeatureEncoder(nn.Module):
     """TAX3Dv2 joint encoder using shared frozen Utonia geometry features.
 
-    Action and anchor clouds are encoded independently so role identity and
-    point-slot counts remain explicit.  The dynamic flow/shape channels are
-    deliberately kept in a small MLP; they are not presented as Utonia color
-    or normal modalities.
+    Static action+anchor geometry is encoded once as a joint Utonia scene.
+    Dynamic FM state/shape/flow channels stay in small MLPs, so Heun sampling
+    does not rerun the 137M frozen backbone at every function evaluation.
     """
 
     def __init__(self, in_channels, hidden_size, model_cfg, *, slot_encoder=None):
@@ -214,27 +231,34 @@ class UtoniaJointFeatureEncoder(nn.Module):
             if slot_encoder is not None
             else UtoniaSlotFeatureEncoder(hidden_size, model_cfg)
         )
+        self.dynamic_encoder = mlp_encoder(3, hidden_size)
         self.flow_feature_encoder = mlp_encoder(9, hidden_size)
         self.action_mixer = mlp_encoder(3 * hidden_size, hidden_size)
         self.action_role = nn.Parameter(torch.zeros(1, hidden_size, 1))
         self.anchor_role = nn.Parameter(torch.zeros(1, hidden_size, 1))
 
-    def forward(self, x, y, x0):
+    def prepare_static_context(self, x0, y):
+        action_size = x0.shape[-1]
+        scene = self.geometry_encoder(torch.cat((x0, y), dim=2))
+        return (
+            scene[:, :, :action_size] + self.action_role,
+            scene[:, :, action_size:] + self.anchor_role,
+        )
+
+    def forward(self, x, y, x0, static_geometry=None):
         if self.model_cfg.type == "flow":
             x_flow = x
             x_recon = x + x0
         else:
             x_flow = x - x0
             x_recon = x
-        action_size = x0.shape[-1]
-        action_enc = self.geometry_encoder(x0) + self.action_role
-        # Match TAX3Dv2's one-hot joint branch: reconstruct and anchor are
-        # encoded as one scene, then split back to their original slots. This
-        # preserves cross-role neighborhoods while retaining role identity.
-        action_size = x0.shape[-1]
-        pred_scene_enc = self.geometry_encoder(torch.cat((x_recon, y), dim=2))
-        pred_action_enc = pred_scene_enc[:, :, :action_size] + self.action_role
-        anchor_pred_enc = pred_scene_enc[:, :, action_size:] + self.anchor_role
+        if static_geometry is None:
+            action_enc, anchor_pred_enc = self.prepare_static_context(x0, y)
+        else:
+            if not isinstance(static_geometry, tuple) or len(static_geometry) != 2:
+                raise ValueError("static_geometry must be an (action, anchor) tuple")
+            action_enc, anchor_pred_enc = static_geometry
+        pred_action_enc = self.dynamic_encoder(x_recon)
 
         shape = x_recon - torch.mean(x_recon, dim=2, keepdim=True)
         flow_zeromean = x_flow - torch.mean(x_flow, dim=2, keepdim=True)
@@ -404,12 +428,21 @@ class JointFeatureEncoder(nn.Module):
         else:
             self.action_mixer = mlp_encoder(2 * hidden_size, hidden_size)
     
-    def forward(self, x, y, x0):
+    def prepare_static_context(self, x0, y):
+        if not hasattr(self, "_utonia_encoder"):
+            raise RuntimeError("static context is available only for Utonia")
+        return self._utonia_encoder.prepare_static_context(x0, y)
+
+    def forward(self, x, y, x0, static_geometry=None):
         """
         TODO: fill this out
         """
         if hasattr(self, "_utonia_encoder"):
-            return self._utonia_encoder(x, y, x0)
+            return self._utonia_encoder(
+                x, y, x0, static_geometry=static_geometry
+            )
+        if static_geometry is not None:
+            raise ValueError("static_geometry is unsupported by this point encoder")
         if self.model_cfg.type == "flow":
             x_flow = x
             x_recon = x + x0

@@ -350,6 +350,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
                     "utonia_checkpoint": str(model_cfg.utonia_checkpoint),
                     "utonia_input_scale_factor": float(model_cfg.utonia_input_scale_factor),
                     "utonia_transform_scale": float(model_cfg.utonia_transform_scale),
+                    "utonia_center_shift": bool(model_cfg.utonia_center_shift),
+                    "utonia_transform_seed": int(model_cfg.utonia_transform_seed),
                     "utonia_enable_flash": bool(model_cfg.utonia_enable_flash),
                 }
                 if str(model_cfg.point_encoder) == "utonia"

@@ -511,6 +511,16 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
         return torch.cat((source_frame, source_shape), dim=2)
 
     def _velocity_model(self, model_kwargs: Dict[str, torch.Tensor]):
+        static_geometry = None
+        feature_encoder = getattr(getattr(self.network, "dit", None), "feature_encoder", None)
+        if (
+            str(getattr(self.model_cfg, "point_encoder", "")) == "utonia"
+            and hasattr(feature_encoder, "prepare_static_context")
+        ):
+            static_geometry = feature_encoder.prepare_static_context(
+                model_kwargs["x0"], model_kwargs["y"]
+            )
+
         def velocity(state: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
             frame = state[:, :, :1]
             shape = state[:, :, 1:]
@@ -518,6 +528,7 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
                 frame,
                 shape,
                 time * self.fm_time_scale,
+                static_geometry=static_geometry,
                 **model_kwargs,
             )
             if frame_velocity.shape[1] != 3 or shape_velocity.shape[1] != 3:

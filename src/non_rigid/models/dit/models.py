@@ -1017,6 +1017,7 @@ class TAX3Dv2_FixedFrame_Token_DiT(nn.Module):
             t: torch.Tensor,
             y: torch.Tensor,
             x0: torch.Tensor,
+            static_geometry=None,
             rel_pos: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
         """
@@ -1030,7 +1031,9 @@ class TAX3Dv2_FixedFrame_Token_DiT(nn.Module):
         """
         x = xr_t + xs_t
         # Encode action and anchor features.
-        x_enc, y_enc = self.feature_encoder(x=x, y=y, x0=x0)
+        x_enc, y_enc = self.feature_encoder(
+            x=x, y=y, x0=x0, static_geometry=static_geometry
+        )
 
         # Concatenating reference frame token to the action features.
         x_enc = torch.cat(
