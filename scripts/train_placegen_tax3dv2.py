@@ -190,6 +190,10 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         model_cfg.utonia_checkpoint = str(
             Path(args.utonia_checkpoint).expanduser().resolve(strict=True)
         )
+    if args.utonia_feature_manifest is not None:
+        model_cfg.utonia_feature_manifest = str(
+            Path(args.utonia_feature_manifest).expanduser().resolve(strict=True)
+        )
     noise_scale = float(
         args.noise_scale
         if args.noise_scale is not None
@@ -347,15 +351,43 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             ),
             **(
                 {
-                    "utonia_checkpoint": str(model_cfg.utonia_checkpoint),
-                    "utonia_input_scale_factor": float(model_cfg.utonia_input_scale_factor),
-                    "utonia_transform_scale": float(model_cfg.utonia_transform_scale),
-                    "utonia_center_shift": bool(model_cfg.utonia_center_shift),
-                    "utonia_transform_seed": int(model_cfg.utonia_transform_seed),
-                    "utonia_static_cache_limit": int(model_cfg.utonia_static_cache_limit),
-                    "utonia_enable_flash": bool(model_cfg.utonia_enable_flash),
+                    **(
+                        {"utonia_checkpoint": str(model_cfg.utonia_checkpoint)}
+                        if "utonia_checkpoint" in model_cfg
+                        else {}
+                    ),
+                    **(
+                        {"utonia_feature_manifest": str(model_cfg.utonia_feature_manifest)}
+                        if "utonia_feature_manifest" in model_cfg
+                        else {}
+                    ),
+                    **(
+                        {
+                            "utonia_input_scale_factor": float(model_cfg.utonia_input_scale_factor),
+                            "utonia_transform_scale": float(model_cfg.utonia_transform_scale),
+                            "utonia_static_cache_limit": int(model_cfg.utonia_static_cache_limit),
+                        }
+                        if "utonia_input_scale_factor" in model_cfg
+                        else {}
+                    ),
+                    **(
+                        {
+                            "utonia_center_shift": bool(model_cfg.utonia_center_shift),
+                            "utonia_transform_seed": int(model_cfg.utonia_transform_seed),
+                            "utonia_enable_flash": bool(model_cfg.utonia_enable_flash),
+                        }
+                        if "utonia_center_shift" in model_cfg
+                        else {}
+                    ),
                 }
-                if str(model_cfg.point_encoder) == "utonia"
+                if str(model_cfg.point_encoder) in {"utonia", "utonia_cached"}
+                else {}
+            ),
+            **(
+                {
+                    "utonia_feature_manifest": str(model_cfg.utonia_feature_manifest),
+                }
+                if str(model_cfg.point_encoder) == "utonia_cached"
                 else {}
             ),
         },
@@ -400,8 +432,9 @@ def main() -> int:
         type=Path,
         help="optional resolved model config; useful for the Utonia backend",
     )
-    parser.add_argument("--point-encoder", choices=("pn2", "utonia"))
+    parser.add_argument("--point-encoder", choices=("pn2", "utonia", "utonia_cached"))
     parser.add_argument("--utonia-checkpoint", type=Path)
+    parser.add_argument("--utonia-feature-manifest", type=Path)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--max-train", type=int, default=72)
     parser.add_argument("--max-validation", type=int, default=12)

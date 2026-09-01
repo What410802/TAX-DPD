@@ -514,7 +514,8 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
         static_geometry = None
         feature_encoder = getattr(getattr(self.network, "dit", None), "feature_encoder", None)
         if (
-            str(getattr(self.model_cfg, "point_encoder", "")) == "utonia"
+            str(getattr(self.model_cfg, "point_encoder", ""))
+            in {"utonia", "utonia_cached"}
             and hasattr(feature_encoder, "prepare_static_context")
         ):
             static_geometry = feature_encoder.prepare_static_context(

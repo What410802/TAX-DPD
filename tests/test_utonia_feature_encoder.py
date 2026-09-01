@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from types import SimpleNamespace
 
+import numpy as np
 import torch
 from torch import nn
 
 from non_rigid.models.encoders import (
+    CachedUtoniaSlotFeatureEncoder,
     UtoniaJointFeatureEncoder,
     UtoniaSlotFeatureEncoder,
+    utonia_geometry_sha256,
 )
 from non_rigid.models.tax3d_v2 import TAX3Dv2FixedFrameFlowMatchingModule
 
@@ -138,3 +143,39 @@ def test_model_cfg_without_runtime_checkpoint_fails_closed() -> None:
         assert "utonia_checkpoint" in str(error)
     else:
         raise AssertionError("missing Utonia checkpoint must fail closed")
+
+
+def test_cached_utonia_encoder_loads_exact_geometry(tmp_path) -> None:
+    scene = torch.randn(1, 3, 9)
+    key = utonia_geometry_sha256(scene)
+    features = np.arange(9 * 576, dtype=np.float32).reshape(9, 576)
+    feature_path = tmp_path / f"{key}.npz"
+    np.savez(feature_path, features=features)
+    digest = hashlib.sha256(feature_path.read_bytes()).hexdigest()
+    manifest = {
+        "schema": "taxdpd.utonia-static-feature-cache/0.1",
+        "feature_width": 576,
+        "records": [
+            {
+                "sample_id": "sample-0",
+                "split": "train",
+                "geometry_sha256": key,
+                "feature_npz": feature_path.name,
+                "feature_npz_sha256": digest,
+                "slot_count": 9,
+            }
+        ],
+    }
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    encoder = CachedUtoniaSlotFeatureEncoder(
+        8, SimpleNamespace(utonia_feature_manifest=str(manifest_path))
+    )
+    actual = encoder.frozen_features(scene)
+    torch.testing.assert_close(actual, torch.from_numpy(features).t().unsqueeze(0))
+
+
+def test_geometry_cache_key_tolerates_float32_centering_roundoff() -> None:
+    scene = torch.randn(1, 3, 9)
+    perturbed = scene + torch.full_like(scene, 4.0e-7)
+    assert utonia_geometry_sha256(scene) == utonia_geometry_sha256(perturbed)
