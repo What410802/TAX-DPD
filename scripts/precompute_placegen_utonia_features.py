@@ -89,10 +89,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument(
-        "--splits", nargs="+", choices=("train", "validation"), default=("train", "validation")
+        "--splits",
+        nargs="+",
+        choices=("train", "validation", "test"),
+        default=("train", "validation"),
     )
     parser.add_argument("--max-train", type=int, default=72)
     parser.add_argument("--max-validation", type=int, default=12)
+    parser.add_argument("--max-test", type=int, default=12)
     parser.add_argument("--scale-factor", type=float, default=15.0)
     parser.add_argument("--transform-scale", type=float, default=0.5)
     parser.add_argument("--seed", type=int, default=1701)
@@ -130,7 +134,11 @@ def main() -> None:
             or training_root.parent / "manifest.json"
         )
         training_paths = _load_training_sample_paths(training_manifest, training_root)
-    limits = {"train": args.max_train, "validation": args.max_validation}
+    limits = {
+        "train": args.max_train,
+        "validation": args.max_validation,
+        "test": args.max_test,
+    }
     selected_counts = {split: 0 for split in args.splits}
     records = []
     for sample in manifest.get("samples", []):
@@ -193,7 +201,7 @@ def main() -> None:
         "center_shift": False,
         "transform_seed": int(args.seed),
         "split_counts": selected_counts,
-        "test_npz_read": False,
+        "test_npz_read": "test" in args.splits,
         "records": records,
     }
     (output_root / "manifest.json").write_text(

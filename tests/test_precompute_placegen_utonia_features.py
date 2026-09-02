@@ -4,10 +4,34 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 
 import numpy as np
 
-from scripts.precompute_placegen_utonia_features import _load_training_sample_paths
+from scripts.precompute_placegen_utonia_features import _load_training_sample_paths, parse_args
+
+
+def test_precompute_parser_accepts_test_split_and_limit(monkeypatch) -> None:
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "precompute_placegen_utonia_features.py",
+            "--inference-manifest",
+            "inference.json",
+            "--checkpoint",
+            "utonia.pth",
+            "--output-root",
+            "cache",
+            "--splits",
+            "test",
+            "--max-test",
+            "12",
+        ],
+    )
+    args = parse_args()
+    assert args.splits == ["test"]
+    assert args.max_test == 12
 
 
 def test_training_manifest_maps_long_sample_id_to_numeric_archive(tmp_path) -> None:
