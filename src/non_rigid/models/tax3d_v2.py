@@ -140,10 +140,18 @@ class _TAX3Dv2BaseModule(L.LightningModule):
 
     def _model_kwargs(self, batch: Dict) -> Dict[str, torch.Tensor]:
         """Build DiT conditioning kwargs from a batch."""
-        return {
+        result = {
             "y":  batch["pc_anchor"].to(self.device).permute(0, 2, 1),
             "x0": batch["pc_action"].to(self.device).permute(0, 2, 1),
         }
+        if str(getattr(self.model_cfg, "point_encoder", "")) == "utonia_cached":
+            sample_id = batch.get("sample_id")
+            if sample_id is not None:
+                if isinstance(sample_id, str):
+                    result["_utonia_sample_ids"] = [sample_id]
+                else:
+                    result["_utonia_sample_ids"] = [str(value) for value in sample_id]
+        return result
 
     def _get_x_start(self, batch: Dict) -> torch.Tensor:
         """Return target point cloud [B, 3, N] for the diffusion loss."""
@@ -511,6 +519,8 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
         return torch.cat((source_frame, source_shape), dim=2)
 
     def _velocity_model(self, model_kwargs: Dict[str, torch.Tensor]):
+        network_kwargs = dict(model_kwargs)
+        sample_ids = network_kwargs.pop("_utonia_sample_ids", None)
         static_geometry = None
         feature_encoder = getattr(getattr(self.network, "dit", None), "feature_encoder", None)
         if (
@@ -518,9 +528,14 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
             in {"utonia", "utonia_cached"}
             and hasattr(feature_encoder, "prepare_static_context")
         ):
-            static_geometry = feature_encoder.prepare_static_context(
-                model_kwargs["x0"], model_kwargs["y"]
-            )
+            if sample_ids is None:
+                static_geometry = feature_encoder.prepare_static_context(
+                    network_kwargs["x0"], network_kwargs["y"]
+                )
+            else:
+                static_geometry = feature_encoder.prepare_static_context(
+                    network_kwargs["x0"], network_kwargs["y"], sample_ids=sample_ids
+                )
 
         def velocity(state: torch.Tensor, time: torch.Tensor) -> torch.Tensor:
             frame = state[:, :, :1]
@@ -530,7 +545,7 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
                 shape,
                 time * self.fm_time_scale,
                 static_geometry=static_geometry,
-                **model_kwargs,
+                **network_kwargs,
             )
             if frame_velocity.shape[1] != 3 or shape_velocity.shape[1] != 3:
                 raise ValueError("FM DiT must return exactly three velocity channels per head")
@@ -545,6 +560,7 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
         pc_anchor: torch.Tensor,
         num_trials: int = 1,
         seed: Optional[int] = None,
+        sample_ids: Optional[list[str]] = None,
     ) -> torch.Tensor:
         """Sample target-free goal point clouds with the FM ODE.
 
@@ -586,6 +602,10 @@ class TAX3Dv2FixedFrameFlowMatchingModule(_TAX3Dv2BaseModule):
             "y": anchor.permute(0, 2, 1),
             "x0": action.permute(0, 2, 1),
         }
+        if sample_ids is not None:
+            if len(sample_ids) != batch_size:
+                raise ValueError("sample_ids length must match pc_action batch")
+            model_kwargs["_utonia_sample_ids"] = [str(value) for value in sample_ids]
         cuda_devices = []
         if device.type == "cuda":
             cuda_devices = [

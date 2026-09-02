@@ -1,4 +1,4 @@
-"""Run target-free TAX3Dv2 Euclidean FM on the held-out PlaceGen test split."""
+"""Run target-free TAX3Dv2 Euclidean FM on one PlaceGen split."""
 
 from __future__ import annotations
 
@@ -58,7 +58,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     started = time.perf_counter()
     records: list[dict[str, Any]] = []
     maximum_peak_vram = 0.0
-    for sample_index, sample in enumerate(inference.samples_by_split["test"]):
+    selected_samples = inference.samples_by_split[args.split]
+    for sample_index, sample in enumerate(selected_samples):
         observation = load_fm_observation(sample, scale_factor=scale_factor)
         result = predict_fm_pose_candidates(
             loaded.module,
@@ -66,6 +67,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             device,
             candidate_count=args.candidates,
             seed=args.seed + sample_index * args.candidates,
+            sample_ids=(sample.sample_id,),
         )
         if result.peak_vram_mib is not None:
             maximum_peak_vram = max(maximum_peak_vram, result.peak_vram_mib)
@@ -85,7 +87,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             }
         )
     duration = time.perf_counter() - started
-    if len(records) != EXPECTED_SPLIT_COUNTS["test"]:
+    if len(records) != EXPECTED_SPLIT_COUNTS[args.split]:
         raise RuntimeError("FM prediction did not cover the complete test split")
     checkpoint_path = Path(args.checkpoint).expanduser().resolve(strict=True)
     report = {
@@ -117,7 +119,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "test_split_used_for_checkpoint_selection": loaded.payload["training"][
             "test_split_used_for_selection"
         ],
-        "test_sample_count": len(records),
+        "prediction_split": args.split,
+        "prediction_sample_count": len(records),
+        # Kept for schema compatibility with the original test-only report;
+        # validation reports must not masquerade as test reports.
+        "test_sample_count": len(records) if args.split == "test" else None,
         "candidate_count_per_sample": args.candidates,
         "finite_prediction_gate_passed": True,
         "device": torch.cuda.get_device_name(device) if device.type == "cuda" else "cpu",
@@ -142,6 +148,7 @@ def main() -> None:
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--candidates", type=int, default=1)
     parser.add_argument("--seed", type=int, default=1701)
+    parser.add_argument("--split", choices=("train", "validation", "test"), default="test")
     print(json.dumps(run(parser.parse_args()), sort_keys=True))
 
 

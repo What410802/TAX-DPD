@@ -130,6 +130,7 @@ class CachedUtoniaSlotFeatureEncoder(nn.Module):
         if not isinstance(records, list) or not records:
             raise ValueError("Utonia feature cache must contain records")
         self.records = {}
+        self.records_by_sample_id = {}
         for record in records:
             if not isinstance(record, dict) or set(record) != {
                 "sample_id",
@@ -143,18 +144,39 @@ class CachedUtoniaSlotFeatureEncoder(nn.Module):
             key = record["geometry_sha256"]
             feature_path = (path.parent / record["feature_npz"]).resolve(strict=True)
             feature_path.relative_to(path.parent)
-            if key in self.records or _sha256_file(feature_path) != record["feature_npz_sha256"]:
+            if (
+                key in self.records
+                or record["sample_id"] in self.records_by_sample_id
+                or _sha256_file(feature_path) != record["feature_npz_sha256"]
+            ):
                 raise ValueError("duplicate or corrupted Utonia feature cache record")
-            self.records[key] = (feature_path, int(record["slot_count"]))
+            entry = (feature_path, int(record["slot_count"]))
+            self.records[key] = entry
+            self.records_by_sample_id[record["sample_id"]] = (key, entry)
         self.manifest_path = path
         self.manifest_sha256 = _sha256_file(path)
         self.projection = nn.Conv1d(576, hidden_size, kernel_size=1)
 
-    def frozen_features(self, x):
+    def frozen_features(self, x, sample_ids=None):
+        if sample_ids is not None and len(sample_ids) != len(x):
+            raise ValueError("sample_ids length must match feature batch")
         outputs = []
-        for scene in x:
+        for index, scene in enumerate(x):
             key = utonia_geometry_sha256(scene.unsqueeze(0))
-            record = self.records.get(key)
+            record = None
+            if sample_ids is not None:
+                by_id = self.records_by_sample_id.get(str(sample_ids[index]))
+                if by_id is None:
+                    raise KeyError(
+                        f"Utonia feature cache misses sample_id {sample_ids[index]!r}"
+                    )
+                expected_key, record = by_id
+                # sample_id is the authoritative manifest join. Geometry hash
+                # remains the deployment fallback when no ID is available;
+                # it is not used to re-key a training sample across runtimes.
+                key = expected_key
+            if record is None:
+                record = self.records.get(key)
             if record is None:
                 raise KeyError(f"Utonia feature cache misses geometry {key}")
             path, slot_count = record
@@ -349,15 +371,18 @@ class UtoniaJointFeatureEncoder(nn.Module):
         digest.update(value.numpy().tobytes(order="C"))
         return digest.hexdigest()
 
-    def prepare_static_context(self, x0, y):
+    def prepare_static_context(self, x0, y, sample_ids=None):
         if x0.ndim != 3 or y.ndim != 3 or x0.shape[0] != y.shape[0]:
             raise ValueError("static Utonia context requires matching [B, C, N] clouds")
         action_size = x0.shape[-1]
         action_features = []
         anchor_features = []
-        for action, anchor in zip(x0, y):
+        if sample_ids is not None and len(sample_ids) != x0.shape[0]:
+            raise ValueError("sample_ids length must match static context batch")
+        for batch_index, (action, anchor) in enumerate(zip(x0, y)):
             scene = torch.cat((action, anchor), dim=1).unsqueeze(0)
-            key = self._geometry_cache_key(scene)
+            sample_id = None if sample_ids is None else str(sample_ids[batch_index])
+            key = f"sample:{sample_id}" if sample_id is not None else self._geometry_cache_key(scene)
             raw = self._static_geometry_cache.get(key)
             if raw is None:
                 if not hasattr(self.geometry_encoder, "frozen_features"):
@@ -368,7 +393,12 @@ class UtoniaJointFeatureEncoder(nn.Module):
                     projection = None
                 else:
                     with torch.no_grad():
-                        raw = self.geometry_encoder.frozen_features(scene)
+                        if sample_id is None:
+                            raw = self.geometry_encoder.frozen_features(scene)
+                        else:
+                            raw = self.geometry_encoder.frozen_features(
+                                scene, sample_ids=[sample_id]
+                            )
                     raw = raw.detach().cpu().contiguous()
                     projection = self.geometry_encoder.projection
                 if self.static_cache_limit > 0:
@@ -573,10 +603,12 @@ class JointFeatureEncoder(nn.Module):
         else:
             self.action_mixer = mlp_encoder(2 * hidden_size, hidden_size)
     
-    def prepare_static_context(self, x0, y):
+    def prepare_static_context(self, x0, y, sample_ids=None):
         if not hasattr(self, "_utonia_encoder"):
             raise RuntimeError("static context is available only for Utonia")
-        return self._utonia_encoder.prepare_static_context(x0, y)
+        return self._utonia_encoder.prepare_static_context(
+            x0, y, sample_ids=sample_ids
+        )
 
     def forward(self, x, y, x0, static_geometry=None):
         """

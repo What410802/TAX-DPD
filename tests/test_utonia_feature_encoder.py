@@ -175,6 +175,43 @@ def test_cached_utonia_encoder_loads_exact_geometry(tmp_path) -> None:
     torch.testing.assert_close(actual, torch.from_numpy(features).t().unsqueeze(0))
 
 
+def test_cached_utonia_encoder_prefers_sample_id_over_geometry(tmp_path) -> None:
+    scene = torch.randn(1, 3, 9)
+    geometry_key = utonia_geometry_sha256(scene)
+    features = np.arange(9 * 576, dtype=np.float32).reshape(9, 576)
+    feature_path = tmp_path / "cached.npz"
+    np.savez(feature_path, features=features)
+    digest = hashlib.sha256(feature_path.read_bytes()).hexdigest()
+    manifest = {
+        "schema": "taxdpd.utonia-static-feature-cache/0.1",
+        "feature_width": 576,
+        "records": [
+            {
+                "sample_id": "rack-plate-000001",
+                "split": "train",
+                "geometry_sha256": geometry_key,
+                "feature_npz": feature_path.name,
+                "feature_npz_sha256": digest,
+                "slot_count": 9,
+            }
+        ],
+    }
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    encoder = CachedUtoniaSlotFeatureEncoder(
+        8, SimpleNamespace(utonia_feature_manifest=str(manifest_path))
+    )
+    # Simulate NumPy/PyTorch centering drift: geometry fallback would miss,
+    # but the native sample identity remains authoritative during training.
+    perturbation = torch.zeros_like(scene)
+    perturbation[..., -1] = 0.0123
+    perturbed = scene + perturbation
+    actual = encoder.frozen_features(
+        perturbed, sample_ids=("rack-plate-000001",)
+    )
+    torch.testing.assert_close(actual, torch.from_numpy(features).t().unsqueeze(0))
+
+
 def test_geometry_cache_key_tolerates_float32_centering_roundoff() -> None:
     scene = torch.randn(1, 3, 9)
     perturbed = scene + torch.full_like(scene, 4.0e-7)

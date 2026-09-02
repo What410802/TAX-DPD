@@ -156,6 +156,10 @@ class PlaceGenTaxDpdDataset(data.Dataset):
             "rpdiff_pcd_scale_factor": torch.tensor(self.scale_factor, dtype=torch.float32),
             "source_world_from_object": source_pose_tensor,
             "target_world_from_object": target_pose_tensor,
+            # Stable join key for sidecar feature caches. This is derived from
+            # the canonical exported filename, not from the ShapeNet object ID
+            # (which may repeat across demonstrations).
+            "sample_id": f"rack-plate-{path.name.split('_')[0]}",
             "sample_index": torch.tensor(index % len(self.demo_files), dtype=torch.int64),
         }
 

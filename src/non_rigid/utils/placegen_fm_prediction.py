@@ -46,6 +46,7 @@ def predict_fm_pose_candidates(
     *,
     candidate_count: int,
     seed: int,
+    sample_ids=None,
 ) -> FMPredictionResult:
     """Sample ordered goal points and compose absolute world poses."""
 
@@ -61,6 +62,7 @@ def predict_fm_pose_candidates(
             anchor,
             num_trials=candidate_count,
             seed=seed,
+            sample_ids=sample_ids,
         )[0]
     if device.type == "cuda":
         torch.cuda.synchronize(device)
