@@ -66,7 +66,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             observation,
             device,
             candidate_count=args.candidates,
-            seed=args.seed + sample_index * args.candidates,
+            # Keep candidate-0 identical when comparing --candidates values.
+            # The per-sample stream uses the fixed maximum candidate range,
+            # rather than a stride derived from the requested count.
+            seed=args.seed + sample_index * 32,
             sample_ids=(sample.sample_id,),
         )
         if result.peak_vram_mib is not None:
@@ -79,7 +82,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "descriptor_sha256": sample.descriptor_sha256,
                 "input_npz_sha256": sample.input_npz_sha256,
                 "model_input_sha256": observation.model_input_sha256,
-                "seed": args.seed + sample_index * args.candidates,
+                "seed": args.seed + sample_index * 32,
                 "candidate_count": len(result.candidates),
                 "latency_seconds": result.latency_seconds,
                 "peak_vram_mib": result.peak_vram_mib,
