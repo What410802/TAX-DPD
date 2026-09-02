@@ -25,6 +25,54 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _load_training_sample_paths(
+    manifest_path: Path,
+    training_root: Path,
+) -> dict[str, Path]:
+    """Join canonical sample IDs to numeric upstream training archives."""
+
+    manifest_path = manifest_path.expanduser().resolve(strict=True)
+    training_root = training_root.expanduser().resolve(strict=True)
+    document = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if document.get("profile") != "placegen.taxpose-rpdiff/0.1":
+        raise ValueError("unexpected PlaceGen training manifest profile")
+    samples = document.get("samples")
+    if not isinstance(samples, list) or not samples:
+        raise ValueError("PlaceGen training manifest has no samples")
+    paths: dict[str, Path] = {}
+    for record in samples:
+        if not isinstance(record, dict):
+            raise TypeError("PlaceGen training sample record must be a mapping")
+        sample_id = record.get("sample_id")
+        split = record.get("split")
+        training_npz = record.get("training_npz")
+        if not isinstance(sample_id, str) or not sample_id:
+            raise ValueError("PlaceGen training sample_id must be non-empty")
+        if sample_id in paths:
+            raise ValueError(f"duplicate PlaceGen training sample_id: {sample_id}")
+        if split not in {"train", "validation", "test"}:
+            raise ValueError(f"invalid PlaceGen training split for {sample_id}")
+        if not isinstance(training_npz, dict):
+            raise TypeError(f"training_npz must be a mapping for {sample_id}")
+        relative = PurePosixPath(str(training_npz.get("path", "")))
+        if relative.is_absolute() or any(part in {"", ".", ".."} for part in relative.parts):
+            raise ValueError(f"unsafe PlaceGen training NPZ path for {sample_id}")
+        path = manifest_path.parent.joinpath(*relative.parts)
+        if path.is_symlink() or not path.is_file():
+            raise FileNotFoundError(f"training source NPZ is missing: {path}")
+        resolved = path.resolve(strict=True)
+        try:
+            resolved.relative_to(training_root)
+        except ValueError as error:
+            raise ValueError(f"training source NPZ escapes training root: {path}") from error
+        if resolved.parent.name != split:
+            raise ValueError(f"training source split differs for {sample_id}")
+        if sha256_file(resolved) != training_npz.get("sha256"):
+            raise ValueError(f"training source NPZ SHA-256 mismatch for {sample_id}")
+        paths[sample_id] = resolved
+    return paths
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--inference-manifest", type=Path, required=True)
@@ -32,6 +80,11 @@ def parse_args() -> argparse.Namespace:
         "--training-root",
         type=Path,
         help="optional native training root; if supplied, source action/anchor are read from it",
+    )
+    parser.add_argument(
+        "--training-manifest",
+        type=Path,
+        help="optional training manifest; defaults to <training-root>/../manifest.json",
     )
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
@@ -69,6 +122,14 @@ def main() -> None:
         utonia_enable_flash=False,
     )
     encoder = UtoniaSlotFeatureEncoder(128, cfg).to(device).eval()
+    training_paths = None
+    if args.training_root is not None:
+        training_root = args.training_root.expanduser().resolve(strict=True)
+        training_manifest = (
+            args.training_manifest
+            or training_root.parent / "manifest.json"
+        )
+        training_paths = _load_training_sample_paths(training_manifest, training_root)
     limits = {"train": args.max_train, "validation": args.max_validation}
     selected_counts = {split: 0 for split in args.splits}
     records = []
@@ -86,20 +147,10 @@ def main() -> None:
         with np.load(path, allow_pickle=False) as archive:
             action = np.asarray(archive["child_points_world"], dtype=np.float32)
             anchor = np.asarray(archive["parent_points_world"], dtype=np.float32)
-        if args.training_root is not None:
-            numeric_id = str(sample["sample_id"]).removeprefix("rack-plate-")
-            if len(numeric_id) != 6 or not numeric_id.isdigit():
-                raise ValueError("sample_id does not map to a canonical training artifact")
-            train_path = (
-                args.training_root.expanduser().resolve(strict=True)
-                / split
-                # PlaceGenTaxDpdDataset indexes *_final_obj_points.npz.  The
-                # init artifact has a similar schema but is a different
-                # snapshot and would produce a valid yet unjoinable cache.
-                / f"{numeric_id}_final_obj_points.npz"
-            )
-            if train_path.is_symlink() or not train_path.is_file():
-                raise FileNotFoundError(f"training source NPZ is missing: {train_path}")
+        if training_paths is not None:
+            train_path = training_paths.get(str(sample["sample_id"]))
+            if train_path is None:
+                raise KeyError(f"training manifest misses sample_id {sample['sample_id']!r}")
             with np.load(train_path, allow_pickle=False) as archive:
                 action = np.asarray(archive["action_points_source_world"], dtype=np.float32)
                 anchor = np.asarray(archive["anchor_points_world"], dtype=np.float32)

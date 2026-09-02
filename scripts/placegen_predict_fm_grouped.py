@@ -91,7 +91,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     duration = time.perf_counter() - started
     if len(records) != EXPECTED_SPLIT_COUNTS[args.split]:
-        raise RuntimeError("FM prediction did not cover the complete test split")
+        raise RuntimeError(f"FM prediction did not cover the complete {args.split} split")
     checkpoint_path = Path(args.checkpoint).expanduser().resolve(strict=True)
     report = {
         "schema": REPORT_SCHEMA,

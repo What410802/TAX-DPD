@@ -36,7 +36,7 @@ def _write(root, *, bad_object: bool = False):
             "anchor_points_world": anchor,
             "source_world_from_object": identity,
             "target_world_from_object": identity,
-            "shapenet_id": np.asarray("sample-0"),
+            "shapenet_id": np.asarray("rack-plate-final-blind-v1-000000"),
         }
         if bad_object:
             values["shapenet_id"] = np.asarray({"unsafe": True}, dtype=object)
@@ -55,6 +55,7 @@ def test_loader_preserves_ordered_flow_and_uses_joint_scene_center(tmp_path) -> 
     )
     assert torch.allclose(item["pc"] - item["pc_action"], expected_flow)
     assert item["rpdiff_pcd_scale_factor"].item() == pytest.approx(15.0)
+    assert item["sample_id"] == "rack-plate-final-blind-v1-000000"
 
 
 def test_loader_maps_validation_directory_and_rejects_pickle(tmp_path) -> None:

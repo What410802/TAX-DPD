@@ -126,6 +126,14 @@ class PlaceGenTaxDpdDataset(data.Dataset):
                 raise ValueError(f"{name}_world_from_object must be a proper float64 SE(3)")
         if sample_id.ndim != 0 or sample_id.dtype.kind not in "SU":
             raise ValueError("shapenet_id must be a pickle-free string scalar")
+        sample_id_value = str(sample_id.item())
+        if (
+            not sample_id_value
+            or "/" in sample_id_value
+            or "\\" in sample_id_value
+            or sample_id_value in {".", ".."}
+        ):
+            raise ValueError("shapenet_id must be a safe non-empty sample identity")
 
         # TAX-DPD's released RPDiff configs use pcd_scale_factor=15.0.  Keep
         # this conversion explicit at the data seam so Gaussian/FM noise and
@@ -156,10 +164,10 @@ class PlaceGenTaxDpdDataset(data.Dataset):
             "rpdiff_pcd_scale_factor": torch.tensor(self.scale_factor, dtype=torch.float32),
             "source_world_from_object": source_pose_tensor,
             "target_world_from_object": target_pose_tensor,
-            # Stable join key for sidecar feature caches. This is derived from
-            # the canonical exported filename, not from the ShapeNet object ID
-            # (which may repeat across demonstrations).
-            "sample_id": f"rack-plate-{path.name.split('_')[0]}",
+            # The PlaceGen exporter stores its canonical sample identity in the
+            # pickle-free string scalar. Numeric filenames exist only for the
+            # upstream PointCloudDataset glob and must not become cache keys.
+            "sample_id": sample_id_value,
             "sample_index": torch.tensor(index % len(self.demo_files), dtype=torch.int64),
         }
 
