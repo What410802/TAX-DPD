@@ -1,4 +1,4 @@
-"""Score a frozen target-free FM prediction report against PlaceGen test supervision."""
+"""Score a frozen target-free prediction report against PlaceGen supervision."""
 
 from __future__ import annotations
 
@@ -75,21 +75,26 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("prediction and evaluator use different inference manifests")
     if prediction.get("split_assignment_sha256") != identity.split_assignment_sha256:
         raise ValueError("prediction and evaluator use different split assignments")
+    split = prediction.get("prediction_split", args.split)
+    if split != args.split:
+        raise ValueError(
+            f"prediction report split {split!r} does not match evaluator split {args.split!r}"
+        )
     records = prediction.get("predictions")
-    if not isinstance(records, list) or len(records) != EXPECTED_SPLIT_COUNTS["test"]:
-        raise ValueError("prediction report does not cover the complete test split")
+    if not isinstance(records, list) or len(records) != EXPECTED_SPLIT_COUNTS[split]:
+        raise ValueError(f"prediction report does not cover the complete {split} split")
 
     training_manifest = json.loads(identity.training_manifest_path.read_text(encoding="utf-8"))
     samples = {
         sample["sample_id"]: sample
         for sample in training_manifest["samples"]
-        if sample["split"] == "test"
+        if sample["split"] == split
     }
     rows: list[dict[str, float | str]] = []
     for record in records:
         sample_id = record.get("sample_id")
-        if sample_id not in samples or record.get("split") != "test":
-            raise ValueError(f"unknown/non-test prediction sample: {sample_id!r}")
+        if sample_id not in samples or record.get("split") != split:
+            raise ValueError(f"unknown/non-{split} prediction sample: {sample_id!r}")
         candidates = record.get("candidates")
         if not isinstance(candidates, list) or not candidates:
             raise ValueError(f"prediction sample {sample_id} has no candidates")
@@ -156,8 +161,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             ),
         }
     )
+    evaluation_schema = PREDICTION_SCHEMAS[prediction_schema].replace(
+        "-test-evaluation/", f"-{split}-evaluation/"
+    )
     report = {
-        "schema": PREDICTION_SCHEMAS[prediction_schema],
+        "schema": evaluation_schema,
         "model": prediction.get("model"),
         "quality_claim": False,
         "prediction_report": str(prediction_path),
@@ -165,9 +173,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "checkpoint_sha256": prediction["checkpoint_sha256"],
         "training_manifest_sha256": identity.training_manifest_sha256,
         "inference_manifest_sha256": identity.inference_manifest_sha256,
-        "test_sample_count": len(rows),
+        "prediction_split": split,
+        "prediction_sample_count": len(rows),
+        "test_sample_count": len(rows) if split == "test" else None,
         "candidate_index": args.candidate_index,
-        "candidate_selection": "fixed-index-no-test-oracle",
+        "candidate_selection": "fixed-index-no-oracle",
         "metrics": metrics,
         "samples": rows,
         "ground_truth_used_by_evaluator": True,
@@ -188,6 +198,7 @@ def main() -> None:
     parser.add_argument("--prediction-report", type=Path, required=True)
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--candidate-index", type=int, default=0)
+    parser.add_argument("--split", choices=("train", "validation", "test"), default="test")
     print(json.dumps(run(parser.parse_args()), sort_keys=True))
 
 
