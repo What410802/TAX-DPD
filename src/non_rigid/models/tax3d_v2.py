@@ -323,6 +323,7 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
         pc_anchor: torch.Tensor,
         num_trials: int = 1,
         seed: Optional[int] = None,
+        sample_ids: Optional[list[str]] = None,
     ) -> torch.Tensor:
         """Sample goal point clouds without reading a ground-truth goal.
 
@@ -360,6 +361,10 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
                 raise ValueError(f"{name} contains non-finite values")
         if pc_action.shape[0] != pc_anchor.shape[0]:
             raise ValueError("pc_action and pc_anchor batch sizes must match")
+        if sample_ids is not None:
+            if len(sample_ids) != pc_action.shape[0]:
+                raise ValueError("sample_ids length must match pc_action batch")
+            sample_ids = [str(value) for value in sample_ids]
 
         device = self.device
         action = pc_action.to(device)
@@ -369,6 +374,8 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
             "y": anchor.permute(0, 2, 1),
             "x0": action.permute(0, 2, 1),
         }
+        if sample_ids is not None:
+            model_kwargs["_utonia_sample_ids"] = sample_ids
         cuda_devices = []
         if device.type == "cuda":
             cuda_devices = [

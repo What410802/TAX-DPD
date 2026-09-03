@@ -80,6 +80,21 @@ def test_sample_candidates_needs_no_ground_truth_and_is_seed_stable() -> None:
         )
 
 
+def test_sample_candidates_forwards_optional_sample_ids_to_conditioning() -> None:
+    module, _ = _module()
+    action = torch.linspace(-1.0, 1.0, 12).reshape(1, 4, 3)
+    anchor = torch.linspace(-2.0, 2.0, 15).reshape(1, 5, 3)
+    module.sample_candidates(action, anchor, num_trials=1, seed=3, sample_ids=("sample-0",))
+
+
+def test_sample_candidates_rejects_sample_id_batch_mismatch() -> None:
+    module, _ = _module()
+    action = torch.zeros(1, 4, 3)
+    anchor = torch.zeros(1, 5, 3)
+    with pytest.raises(ValueError, match="sample_ids length"):
+        module.sample_candidates(action, anchor, sample_ids=("a", "b"))
+
+
 @pytest.mark.parametrize(
     ("action", "anchor", "message"),
     [
