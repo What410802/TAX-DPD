@@ -79,6 +79,7 @@ torchmetrics = "*"
 hydra-core  = "==1.3.2"
 omegaconf   = "==2.3.0"
 wandb       = "==0.15.4"
+tensorboard = ">=2.14,<3"
 huggingface_hub = "==0.24.6"
 
 # Data

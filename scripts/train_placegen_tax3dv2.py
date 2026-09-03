@@ -21,7 +21,6 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
 from non_rigid.datasets.rigid import PlaceGenTaxDpdDataset
 from non_rigid.models.flow_matching import flow_matching_loss
@@ -112,9 +111,11 @@ def _batch(dataset: PlaceGenTaxDpdDataset, index: int, device: torch.device) -> 
 
 class _TrainingLoggers:
     def __init__(self, args: argparse.Namespace, cfg: Any) -> None:
-        self.writer: SummaryWriter | None = None
+        self.writer: Any | None = None
         self.wandb_run: Any | None = None
         if args.logger in {"tensorboard", "both"}:
+            from torch.utils.tensorboard import SummaryWriter
+
             log_dir = Path(args.log_dir or args.output_checkpoint.parent / "tensorboard").expanduser().resolve()
             log_dir.mkdir(parents=True, exist_ok=True)
             self.writer = SummaryWriter(log_dir=str(log_dir))

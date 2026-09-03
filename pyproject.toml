@@ -32,6 +32,7 @@ dependencies = [
     "shapely == 2.0.2",
     "timm == 0.9.12",
     "torchmetrics",
+    "tensorboard>=2.14,<3",
     "wandb == 0.15.4",
     # the following are for DP3
     "zarr == 2.12.0",
