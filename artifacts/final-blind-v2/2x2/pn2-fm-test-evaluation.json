@@ -1,0 +1,129 @@
+{
+  "candidate_index": 0,
+  "candidate_selection": "fixed-index-no-oracle",
+  "checkpoint_sha256": "83fabfadd0b5f39cbc5d012860230203928e65fc5e08b0b7b082a2cd23357742",
+  "ground_truth_used_by_evaluator": true,
+  "inference_manifest_sha256": "bbea3c94751c825aa46a1556f0b27f301bf2435296c5abcda5ed0ef12efcdec5",
+  "metrics": {
+    "ordered_point_rmse_mm": {
+      "max": 25.45081537047754,
+      "mean": 16.72090466151654,
+      "median": 18.759268301910353
+    },
+    "pass_point_rmse_lt20mm": 9,
+    "pass_rotation_lt10deg": 12,
+    "pass_translation_lt20mm": 9,
+    "rotation_error_deg": {
+      "max": 2.1787441908671092,
+      "mean": 1.5521190891013668,
+      "median": 1.6590367641285317
+    },
+    "symmetric_chamfer_mm": {
+      "max": 16.27087051849203,
+      "mean": 9.718271491893029,
+      "median": 8.226021593575773
+    },
+    "translation_error_mm": {
+      "max": 25.443986135180936,
+      "mean": 16.61742741428756,
+      "median": 18.670656344587044
+    }
+  },
+  "model": "TAX-DPD-reconstructed-fixed-frame-euclidean-fm",
+  "planner_called": false,
+  "prediction_report": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/artifacts/final-blind-v2/2x2/pn2-fm-test-predictions.json",
+  "prediction_report_sha256": "0d3ff21655035421568ebd9970e933c8010d611c25cdc11cfce575fc10f137d3",
+  "prediction_sample_count": 12,
+  "prediction_split": "test",
+  "quality_claim": false,
+  "samples": [
+    {
+      "ordered_point_rmse_mm": 18.3553218567362,
+      "rotation_error_deg": 1.1036033068779982,
+      "sample_id": "rack-plate-final-blind-v2-000004",
+      "symmetric_chamfer_mm": 14.781093969409019,
+      "translation_error_mm": 18.30316132437775
+    },
+    {
+      "ordered_point_rmse_mm": 25.45081537047754,
+      "rotation_error_deg": 0.8604167516100045,
+      "sample_id": "rack-plate-final-blind-v2-000010",
+      "symmetric_chamfer_mm": 15.355435269317226,
+      "translation_error_mm": 25.443986135180936
+    },
+    {
+      "ordered_point_rmse_mm": 21.168256110767288,
+      "rotation_error_deg": 1.993382641828066,
+      "sample_id": "rack-plate-final-blind-v2-000024",
+      "symmetric_chamfer_mm": 10.534232866944098,
+      "translation_error_mm": 21.11842240399062
+    },
+    {
+      "ordered_point_rmse_mm": 19.163214747084503,
+      "rotation_error_deg": 2.1787441908671092,
+      "sample_id": "rack-plate-final-blind-v2-000030",
+      "symmetric_chamfer_mm": 14.445293453097866,
+      "translation_error_mm": 19.038151364796335
+    },
+    {
+      "ordered_point_rmse_mm": 7.610676250177524,
+      "rotation_error_deg": 1.849217513676321,
+      "sample_id": "rack-plate-final-blind-v2-000033",
+      "symmetric_chamfer_mm": 4.595235601417434,
+      "translation_error_mm": 7.291278069258378
+    },
+    {
+      "ordered_point_rmse_mm": 19.896340243548806,
+      "rotation_error_deg": 1.5665932577913677,
+      "sample_id": "rack-plate-final-blind-v2-000044",
+      "symmetric_chamfer_mm": 8.252703501264044,
+      "translation_error_mm": 19.811142377000845
+    },
+    {
+      "ordered_point_rmse_mm": 12.551126885871678,
+      "rotation_error_deg": 1.3202107104741956,
+      "sample_id": "rack-plate-final-blind-v2-000053",
+      "symmetric_chamfer_mm": 8.1993396858875,
+      "translation_error_mm": 12.500999632177935
+    },
+    {
+      "ordered_point_rmse_mm": 19.902581235819067,
+      "rotation_error_deg": 2.1531621421514884,
+      "sample_id": "rack-plate-final-blind-v2-000064",
+      "symmetric_chamfer_mm": 16.27087051849203,
+      "translation_error_mm": 19.85990511510313
+    },
+    {
+      "ordered_point_rmse_mm": 10.025991078449948,
+      "rotation_error_deg": 1.4972030196089425,
+      "sample_id": "rack-plate-final-blind-v2-000070",
+      "symmetric_chamfer_mm": 6.63089966162028,
+      "translation_error_mm": 9.85477244889957
+    },
+    {
+      "ordered_point_rmse_mm": 23.650053684447453,
+      "rotation_error_deg": 1.7890987814658728,
+      "sample_id": "rack-plate-final-blind-v2-000080",
+      "symmetric_chamfer_mm": 6.9314937999755015,
+      "translation_error_mm": 23.583188644052843
+    },
+    {
+      "ordered_point_rmse_mm": 6.452383116965394,
+      "rotation_error_deg": 1.7514802704656958,
+      "sample_id": "rack-plate-final-blind-v2-000083",
+      "symmetric_chamfer_mm": 4.833516893921144,
+      "translation_error_mm": 6.215803918382811
+    },
+    {
+      "ordered_point_rmse_mm": 16.424095357853034,
+      "rotation_error_deg": 0.5623164823993397,
+      "sample_id": "rack-plate-final-blind-v2-000087",
+      "symmetric_chamfer_mm": 5.789142681370215,
+      "translation_error_mm": 16.38831753822955
+    }
+  ],
+  "schema": "placegen.tax3dv2-fm-test-evaluation/0.1",
+  "simulator_called": false,
+  "test_sample_count": 12,
+  "training_manifest_sha256": "4362ef8108ef952b3d850f6ae44f28b81ec4868b52a08495e201048e9c4ef6b2"
+}

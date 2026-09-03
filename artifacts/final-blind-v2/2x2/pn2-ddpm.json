@@ -1,0 +1,85 @@
+{
+  "architecture": {
+    "diffusion_inference_steps": 100,
+    "diffusion_steps": 100,
+    "joint_encode": true,
+    "learn_sigma": true,
+    "point_encoder": "pn2",
+    "rotation_corruption": true,
+    "rotation_noise_scale_deg": 45.0
+  },
+  "best_validation_loss": 0.3789215721189976,
+  "checkpoint_schema": "placegen.tax3dv2-ddpm-checkpoint/0.1",
+  "checkpoint_sha256": "b489b75216d36552bf8c9b8ce6ce241af724fce273848e786dde77ded0f680fb",
+  "data_root": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/training",
+  "device": "cuda",
+  "epochs": 10,
+  "history": [
+    {
+      "epoch": 0,
+      "train_loss": 1.0666185141437583,
+      "validation_loss": 1.1196815222501755
+    },
+    {
+      "epoch": 1,
+      "train_loss": 0.8987507242709398,
+      "validation_loss": 0.7572960195442041
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.6979476754657097,
+      "validation_loss": 0.7490260191261768
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.9590683211572468,
+      "validation_loss": 0.7420226807395617
+    },
+    {
+      "epoch": 4,
+      "train_loss": 1.0352762369439006,
+      "validation_loss": 0.5919619078437487
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.654807573184371,
+      "validation_loss": 0.5225311641891798
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.5685504407932361,
+      "validation_loss": 0.6239998204012712
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.6072393092844222,
+      "validation_loss": 0.5011802930384874
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.38102728930405444,
+      "validation_loss": 0.6047636475414038
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.4000996976780395,
+      "validation_loss": 0.3789215721189976
+    }
+  ],
+  "inference_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/inference/manifest.json",
+  "inference_manifest_sha256": "bbea3c94751c825aa46a1556f0b27f301bf2435296c5abcda5ed0ef12efcdec5",
+  "learning_rate": 0.0001,
+  "mode": "ddpm",
+  "model": "TAX3Dv2-fixed-frame-DDPM",
+  "model_capability": "TAX-DPD-reconstructed-fixed-frame-DDPM",
+  "model_state_sha256": "aa109bb9338dc1bffc04c180510bc6c033f6e467675390bffe5b6d3364f59e78",
+  "noise_scale": 1.0,
+  "planner_called": false,
+  "profile": "placegen.tax3dv2-training-run/0.1",
+  "seed": 20260903,
+  "simulator_called": false,
+  "train_count": 72,
+  "training_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/manifest.json",
+  "training_manifest_sha256": "4362ef8108ef952b3d850f6ae44f28b81ec4868b52a08495e201048e9c4ef6b2",
+  "validation_count": 12
+}

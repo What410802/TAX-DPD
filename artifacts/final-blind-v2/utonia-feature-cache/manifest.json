@@ -1,0 +1,786 @@
+{
+  "center_shift": false,
+  "feature_width": 576,
+  "inference_manifest_sha256": "bbea3c94751c825aa46a1556f0b27f301bf2435296c5abcda5ed0ef12efcdec5",
+  "records": [
+    {
+      "feature_npz": "da7c3fefefd252324be4fc40f9240dcfda55bc6ca45250f59a1c7e44293d6d1e.npz",
+      "feature_npz_sha256": "ede581916c1538284e3c6ae485409b6e0d6c63d596b694a87bff950ab4a1b7bb",
+      "geometry_sha256": "da7c3fefefd252324be4fc40f9240dcfda55bc6ca45250f59a1c7e44293d6d1e",
+      "sample_id": "rack-plate-final-blind-v2-000000",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "8f564da87cd6818f847fd92956f0028ca4c9401642b37b4c4cfb3c6ed124145f.npz",
+      "feature_npz_sha256": "1c8d4ade89c3be307536882d6b67cf3d076621e1ccf952d95a3e829377c909dd",
+      "geometry_sha256": "8f564da87cd6818f847fd92956f0028ca4c9401642b37b4c4cfb3c6ed124145f",
+      "sample_id": "rack-plate-final-blind-v2-000001",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "72ee3b6c24d806992c6592c30ef6be1177994251cae0f3e20bdb17ac485ca1a4.npz",
+      "feature_npz_sha256": "9dd626362e01ef7348269ea8a4e1b51a2f4dccac6709ce815bf9d6994aae6abe",
+      "geometry_sha256": "72ee3b6c24d806992c6592c30ef6be1177994251cae0f3e20bdb17ac485ca1a4",
+      "sample_id": "rack-plate-final-blind-v2-000002",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "8e6192264ffdaf0c3f35e847bc00d3fceb7e51d28665a679ab22a8e65b90647b.npz",
+      "feature_npz_sha256": "7155b078c59f7bba126b0b887c18eaaa4d11127d51e0d7152e6aff458df1ca41",
+      "geometry_sha256": "8e6192264ffdaf0c3f35e847bc00d3fceb7e51d28665a679ab22a8e65b90647b",
+      "sample_id": "rack-plate-final-blind-v2-000003",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "4d36036a085a22ba38b584e0295137a976f177f887391b4fc681ca11f0f55375.npz",
+      "feature_npz_sha256": "85efddffdecd3f2ff50849ea6d9925a407e6186f18846dc191d14269d694c7c7",
+      "geometry_sha256": "4d36036a085a22ba38b584e0295137a976f177f887391b4fc681ca11f0f55375",
+      "sample_id": "rack-plate-final-blind-v2-000004",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "c52a62c8d7575acd8024475b73211f46f7bfabeb3294c5b0f2fa2e6ef98d0756.npz",
+      "feature_npz_sha256": "3f97a196ba6c66ab45449fccc64d5114a8991ff6a83b7ac4cfc4d2c287edbf03",
+      "geometry_sha256": "c52a62c8d7575acd8024475b73211f46f7bfabeb3294c5b0f2fa2e6ef98d0756",
+      "sample_id": "rack-plate-final-blind-v2-000005",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "5bd6fcbaedad0c489c14b9d5e0eacab48cbc15d09bbff00ae2a9fb8f386d7891.npz",
+      "feature_npz_sha256": "aad2bf5751eca022e9c4812661f9aca9284c6be51b1c3a01de847b33a786fbc3",
+      "geometry_sha256": "5bd6fcbaedad0c489c14b9d5e0eacab48cbc15d09bbff00ae2a9fb8f386d7891",
+      "sample_id": "rack-plate-final-blind-v2-000006",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "327a1ef23a112175adc4be13fdb0a614f896da20c93b0951c483d1b9e084bc31.npz",
+      "feature_npz_sha256": "cc8a12e3a75dda7bafce211c29cc5e71a2d5b5a893d9189f283a062a5f597283",
+      "geometry_sha256": "327a1ef23a112175adc4be13fdb0a614f896da20c93b0951c483d1b9e084bc31",
+      "sample_id": "rack-plate-final-blind-v2-000007",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "b342f1b25f55b5d701775e7643c0ff304858266fdd650d4af55e0b083c219ac9.npz",
+      "feature_npz_sha256": "18db301ae9de0b0f82bc10433ef104fd11f2b77bc8b56fb043ae184a0f13fb91",
+      "geometry_sha256": "b342f1b25f55b5d701775e7643c0ff304858266fdd650d4af55e0b083c219ac9",
+      "sample_id": "rack-plate-final-blind-v2-000008",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "20edbdd50924d1d6a3af0af84a78135e169bbc076bd613661dbfa93b52b6fca3.npz",
+      "feature_npz_sha256": "0bd92aedf23603e701190a22dcba8c69f34ebf2b94216d9dc3f626fbee2fba26",
+      "geometry_sha256": "20edbdd50924d1d6a3af0af84a78135e169bbc076bd613661dbfa93b52b6fca3",
+      "sample_id": "rack-plate-final-blind-v2-000009",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "96055cf96ace2e8c3055e42f78b202aed71f06d04333a91c5fdd0a5eba6eac8f.npz",
+      "feature_npz_sha256": "16b25e696ac20252c1ea5382517e2a4d134528cb8f41bf7b981e28a711601e68",
+      "geometry_sha256": "96055cf96ace2e8c3055e42f78b202aed71f06d04333a91c5fdd0a5eba6eac8f",
+      "sample_id": "rack-plate-final-blind-v2-000010",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "0d6a45d34603d7ace65d00bafb3da24d43b3a53ae368ca831618bf141a2a79df.npz",
+      "feature_npz_sha256": "d1c168cbb40980f6e31f62fc62725887beccf91d591d94bcaf68718f857d83e0",
+      "geometry_sha256": "0d6a45d34603d7ace65d00bafb3da24d43b3a53ae368ca831618bf141a2a79df",
+      "sample_id": "rack-plate-final-blind-v2-000011",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "73cbcee7034f301d2bb88951276ad3f61fb54fcea76b163df0e71242c5921ef8.npz",
+      "feature_npz_sha256": "caf69dca3372a5b82383ae2910e295013c0fecc21700eb53a3008edb1757b15a",
+      "geometry_sha256": "73cbcee7034f301d2bb88951276ad3f61fb54fcea76b163df0e71242c5921ef8",
+      "sample_id": "rack-plate-final-blind-v2-000012",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "274fbd9cc24cc914fd236246f26b3a5b2c03736af6acd301158be0f2c3da59f7.npz",
+      "feature_npz_sha256": "d9dd1c8f65bd7b69a3f217290ee9ef767bdfeebbb727a4a1d6b6c75937ac96b5",
+      "geometry_sha256": "274fbd9cc24cc914fd236246f26b3a5b2c03736af6acd301158be0f2c3da59f7",
+      "sample_id": "rack-plate-final-blind-v2-000013",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "eebe6a9afba86ede22d6044c00108a960167793491291526f0ed7b9bd171f6b1.npz",
+      "feature_npz_sha256": "6c71d2c1649ac4f653f6f4d2ecc5aab346bc592e04342a9885ee4ac7532f86d9",
+      "geometry_sha256": "eebe6a9afba86ede22d6044c00108a960167793491291526f0ed7b9bd171f6b1",
+      "sample_id": "rack-plate-final-blind-v2-000014",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "23befefb5a574cc3cc523f26a293bb37992f2f379672c8148ed2c201149c92fc.npz",
+      "feature_npz_sha256": "bbccc4a3da1be170ab47825fb5358163e85c2e548fe37db899f1ebcc150db706",
+      "geometry_sha256": "23befefb5a574cc3cc523f26a293bb37992f2f379672c8148ed2c201149c92fc",
+      "sample_id": "rack-plate-final-blind-v2-000015",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "08688a09b244ee9377fba70026da461f67981923b9dd1096575e233cc44d5f2f.npz",
+      "feature_npz_sha256": "d52c686c526566eab86c3ba16ec8ab417bedb11987349f2d33dca3aef91edb9e",
+      "geometry_sha256": "08688a09b244ee9377fba70026da461f67981923b9dd1096575e233cc44d5f2f",
+      "sample_id": "rack-plate-final-blind-v2-000016",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "670e1ecb1b201d7dedbf90288b71c96587910807d4a4b4fb85f307ce4f944fc0.npz",
+      "feature_npz_sha256": "3c6079a86395f2e377d2fa714b7d43a28154b210296413933a26feaa497366c5",
+      "geometry_sha256": "670e1ecb1b201d7dedbf90288b71c96587910807d4a4b4fb85f307ce4f944fc0",
+      "sample_id": "rack-plate-final-blind-v2-000017",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "d7986e5086ad149086a4b604dd2798437dab9bb618b762fe4e5a57030dc780cf.npz",
+      "feature_npz_sha256": "f884acfcbda78f37f104c385987a5dcfa4b8df2cb05d8a3f53774bb1646b7d43",
+      "geometry_sha256": "d7986e5086ad149086a4b604dd2798437dab9bb618b762fe4e5a57030dc780cf",
+      "sample_id": "rack-plate-final-blind-v2-000018",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "5492d7d6a811520a714cfd52bdbc77539c651c0753ab503acc89129556f33ff3.npz",
+      "feature_npz_sha256": "baa503200c049ef7438efbd3618489f152da26b27326d4fac9ffb94df407304d",
+      "geometry_sha256": "5492d7d6a811520a714cfd52bdbc77539c651c0753ab503acc89129556f33ff3",
+      "sample_id": "rack-plate-final-blind-v2-000019",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "15ea620b4751135a4c9619fae037520eb965f6759b1336944248c9dfcd206260.npz",
+      "feature_npz_sha256": "bb9278f90e30257bfdf3d6dacb1f8cf7ebabc1a76bf3f52b682b6e37c78e79c3",
+      "geometry_sha256": "15ea620b4751135a4c9619fae037520eb965f6759b1336944248c9dfcd206260",
+      "sample_id": "rack-plate-final-blind-v2-000020",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "07386a7bd0c2a827a56546d50eff8d4803dee66a4ebbc18315630c46327fea0d.npz",
+      "feature_npz_sha256": "9bf9b2312d7460d08035f59e1491148277244166571be3acc79c120b57b7c564",
+      "geometry_sha256": "07386a7bd0c2a827a56546d50eff8d4803dee66a4ebbc18315630c46327fea0d",
+      "sample_id": "rack-plate-final-blind-v2-000021",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "51a85b907f24b1f9f5f2e8c4109a192062eb438570253b477022b5ef135682ad.npz",
+      "feature_npz_sha256": "515f59f3c15696dbdf0a55d861a21b9df2a5a39d315a700bf1b8c03d07d44d5c",
+      "geometry_sha256": "51a85b907f24b1f9f5f2e8c4109a192062eb438570253b477022b5ef135682ad",
+      "sample_id": "rack-plate-final-blind-v2-000022",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "a2df9d1228687ebef306298ff16ce96b9e31bcae43f1748c7346320efc8e6be7.npz",
+      "feature_npz_sha256": "6206ffe7a348add0347be11b0b11eab31528bfbda751edd0be83bfc869a66534",
+      "geometry_sha256": "a2df9d1228687ebef306298ff16ce96b9e31bcae43f1748c7346320efc8e6be7",
+      "sample_id": "rack-plate-final-blind-v2-000023",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "aaf644906ca8fd2e2ad4cfb69b02e0c0cf497ac51699f35fbd21a2a443eefacf.npz",
+      "feature_npz_sha256": "f848bfbb6b116d7757dc4b8e9008eaa45e1bf701e34395e3d4925cff386b2c66",
+      "geometry_sha256": "aaf644906ca8fd2e2ad4cfb69b02e0c0cf497ac51699f35fbd21a2a443eefacf",
+      "sample_id": "rack-plate-final-blind-v2-000024",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "218461db9a228ad955eba54bf37623ad4888d80bc20061630bd6c08b74be7867.npz",
+      "feature_npz_sha256": "6905379285ea3293f95a77575212e051b3d1d4e14c7747afb744194a7ddb29ee",
+      "geometry_sha256": "218461db9a228ad955eba54bf37623ad4888d80bc20061630bd6c08b74be7867",
+      "sample_id": "rack-plate-final-blind-v2-000025",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "1e26bd4b7924f9bac533ae993ae5c8db9c0aff7db34da8ac29f56dbe7c3008de.npz",
+      "feature_npz_sha256": "3f0487c2a6b781b3ac5f1a3f4f1f63b20ff5bcce19d5968671abc5f802608936",
+      "geometry_sha256": "1e26bd4b7924f9bac533ae993ae5c8db9c0aff7db34da8ac29f56dbe7c3008de",
+      "sample_id": "rack-plate-final-blind-v2-000026",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "24a271544f95f089ce0137f05ebdd52760b53c4af72866b927f89e28249f634e.npz",
+      "feature_npz_sha256": "14194ad72fda3d10079aee7e2b02199f61a69313516bb6076312d8952518d04b",
+      "geometry_sha256": "24a271544f95f089ce0137f05ebdd52760b53c4af72866b927f89e28249f634e",
+      "sample_id": "rack-plate-final-blind-v2-000027",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "bc1600b433ecb252bdea60573c7d87dc4df3ffd0ff7c994f3952f6c282f9726a.npz",
+      "feature_npz_sha256": "1aad41bee356d5bb7e3a50ac12cd9c5cd6ac211a37b485b3f4873b23050e6f5c",
+      "geometry_sha256": "bc1600b433ecb252bdea60573c7d87dc4df3ffd0ff7c994f3952f6c282f9726a",
+      "sample_id": "rack-plate-final-blind-v2-000028",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "0b440ff9c9100e94442e9ac5cd6687ebbae35bdbb573fe05ede0faa806abb7d8.npz",
+      "feature_npz_sha256": "d068042248180200e1932a5fed9e483d58f4c0f806e7a6b2f1e15dba2b6675c0",
+      "geometry_sha256": "0b440ff9c9100e94442e9ac5cd6687ebbae35bdbb573fe05ede0faa806abb7d8",
+      "sample_id": "rack-plate-final-blind-v2-000029",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "893ec8e07231b4ef58f230473a2925c0ad1179b8bcf7e79906bab8a6f949d879.npz",
+      "feature_npz_sha256": "514185ad3055b54ba345457d794ae960e6c1093ceeda71043fc49fe85698ed12",
+      "geometry_sha256": "893ec8e07231b4ef58f230473a2925c0ad1179b8bcf7e79906bab8a6f949d879",
+      "sample_id": "rack-plate-final-blind-v2-000030",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "d34d9006fcffd9d7d88c8901a4d09711dae3bb1eb1f82b9f8978695461d633ef.npz",
+      "feature_npz_sha256": "ea6f52109a647252d2aeeff56ce63abd4edbb47d2efb1d24672ae397bedb1c43",
+      "geometry_sha256": "d34d9006fcffd9d7d88c8901a4d09711dae3bb1eb1f82b9f8978695461d633ef",
+      "sample_id": "rack-plate-final-blind-v2-000031",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "b5802cbe5ad7726f16714d22594cd3db7e5606bad862742c40aa385a4acb2b81.npz",
+      "feature_npz_sha256": "998f6a760c44bd268bcacd456120986f4ec8db6992316f60c2385bb6b32659c0",
+      "geometry_sha256": "b5802cbe5ad7726f16714d22594cd3db7e5606bad862742c40aa385a4acb2b81",
+      "sample_id": "rack-plate-final-blind-v2-000032",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "e4479f83f1be858f4d92bd363963b227cea19a996fbfd81c243c781bedcf074a.npz",
+      "feature_npz_sha256": "a6bc8e6b77a36ad317b5677e7cc2b7c0f91fc803e83d9d28c9da74ad21048040",
+      "geometry_sha256": "e4479f83f1be858f4d92bd363963b227cea19a996fbfd81c243c781bedcf074a",
+      "sample_id": "rack-plate-final-blind-v2-000033",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "351cfa9318e3461e5c7ebd260d11ab3f9df095416d0a593bb83ea6fcf7d5e1a6.npz",
+      "feature_npz_sha256": "0e3d19ef804d60b9c86c079d3773ca146fa80e6ecb150c0ca5653c2c56b96331",
+      "geometry_sha256": "351cfa9318e3461e5c7ebd260d11ab3f9df095416d0a593bb83ea6fcf7d5e1a6",
+      "sample_id": "rack-plate-final-blind-v2-000034",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "67f73b4db623c056933633e9bff40afbfed84233d6cece82cce3f94d616223ef.npz",
+      "feature_npz_sha256": "5f7f74fca2e5e96ae67303abf2cd2cce9ed05305955484ae35aa807eec234cef",
+      "geometry_sha256": "67f73b4db623c056933633e9bff40afbfed84233d6cece82cce3f94d616223ef",
+      "sample_id": "rack-plate-final-blind-v2-000035",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "d82459e7d65a761edd41e2675e20eea9794b1232fb2572854fec62951d128fa8.npz",
+      "feature_npz_sha256": "60557a6db5b4609821a3a1e011d8b6e877fbce4d3590d35c37b41dd39a7020e1",
+      "geometry_sha256": "d82459e7d65a761edd41e2675e20eea9794b1232fb2572854fec62951d128fa8",
+      "sample_id": "rack-plate-final-blind-v2-000036",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "b6322d1de2ff88fed554d007c1d0eda86998afe74c06389ba039030a47eb1677.npz",
+      "feature_npz_sha256": "7a3d4f92ebd973df1f44c07eb0de224d015baeb88375cdd67eff68356c8f7771",
+      "geometry_sha256": "b6322d1de2ff88fed554d007c1d0eda86998afe74c06389ba039030a47eb1677",
+      "sample_id": "rack-plate-final-blind-v2-000037",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "5f48448dbb0d8c8688185e0c3fdf927608d97cf7d452712d10a83e5b6f0846fe.npz",
+      "feature_npz_sha256": "4c4e526ae398cde9cd22de8f1e44cc4f57e29175c88f3ff6738fac71ee876d0e",
+      "geometry_sha256": "5f48448dbb0d8c8688185e0c3fdf927608d97cf7d452712d10a83e5b6f0846fe",
+      "sample_id": "rack-plate-final-blind-v2-000038",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "c77478d9114f71c603a071c6695f3777b2151bf339459ea3660845c4cb55dc22.npz",
+      "feature_npz_sha256": "d160b89262d32a84771876beb8f045321c3c2c25785fe7a07e995eac2fe906bd",
+      "geometry_sha256": "c77478d9114f71c603a071c6695f3777b2151bf339459ea3660845c4cb55dc22",
+      "sample_id": "rack-plate-final-blind-v2-000039",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "416aab3c2da1f905b2b95fb80f194bad625b3a91150b7f09d64a64dc7efafdfa.npz",
+      "feature_npz_sha256": "b4236d293aef666cb647a33b68e98bb3a51e201a2bf39a55d75f3066f6dd07f7",
+      "geometry_sha256": "416aab3c2da1f905b2b95fb80f194bad625b3a91150b7f09d64a64dc7efafdfa",
+      "sample_id": "rack-plate-final-blind-v2-000040",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "6aca2dd965e6a1dce35965049de57abb09cefed49efa63358acf3627948f3770.npz",
+      "feature_npz_sha256": "c794c1b9483e2a6cb3a0ce06866cee4053127fa8216b049d9287af398924f42d",
+      "geometry_sha256": "6aca2dd965e6a1dce35965049de57abb09cefed49efa63358acf3627948f3770",
+      "sample_id": "rack-plate-final-blind-v2-000041",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "67030485b1a17d74ba92de5e25879d20f1f2bd3bc4836e1b96024cfd44ed77ba.npz",
+      "feature_npz_sha256": "1cb7b4c3c4147d8d66b72633af2bfbb6a1d8ea86b9f8ba7120318d0f87741864",
+      "geometry_sha256": "67030485b1a17d74ba92de5e25879d20f1f2bd3bc4836e1b96024cfd44ed77ba",
+      "sample_id": "rack-plate-final-blind-v2-000042",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "3df0ec94b0c0e5707bffa9ae8a9a9004d3e08b93aba478f55af469f8692f1fc2.npz",
+      "feature_npz_sha256": "b50fe321ff097f197d958c2efa853c32e50325d78cb32e3f648e96112d1ff6ca",
+      "geometry_sha256": "3df0ec94b0c0e5707bffa9ae8a9a9004d3e08b93aba478f55af469f8692f1fc2",
+      "sample_id": "rack-plate-final-blind-v2-000043",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "d0a09749fd8240d0cc4e4d9df22682fbd984d2ab7136ca2a9c2baf41b6e6f349.npz",
+      "feature_npz_sha256": "c3c49ca82e1c991ba0f68a87883c0a9f78daffc952ce3a5ad12d80b5d2a9884a",
+      "geometry_sha256": "d0a09749fd8240d0cc4e4d9df22682fbd984d2ab7136ca2a9c2baf41b6e6f349",
+      "sample_id": "rack-plate-final-blind-v2-000044",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "352494c86c52ebee67051b68fd5ce50e970e50636f891ae5ef05dd9423fceb03.npz",
+      "feature_npz_sha256": "f356d228b3508cbdf1f45c9b2a3bad61d850dd9701042ca81e6933eaebb15779",
+      "geometry_sha256": "352494c86c52ebee67051b68fd5ce50e970e50636f891ae5ef05dd9423fceb03",
+      "sample_id": "rack-plate-final-blind-v2-000045",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "89620626faaf79b87d0fd4fdf72b1df3730cf55fa4fb0bebbdb53cd4cdb9c962.npz",
+      "feature_npz_sha256": "6a5f2525cbe808734b67a3b49e00166f8eb2cf0388476279dbabf45a2623843b",
+      "geometry_sha256": "89620626faaf79b87d0fd4fdf72b1df3730cf55fa4fb0bebbdb53cd4cdb9c962",
+      "sample_id": "rack-plate-final-blind-v2-000046",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "ad15221a1d09d38bfa6071640b0df5556b0fcd6741aed677268d5142c6094976.npz",
+      "feature_npz_sha256": "1ef2d38bb2a0121fbee7b6bc07a5d88eb36b7c0c12b9acb84889ceec567cdfc4",
+      "geometry_sha256": "ad15221a1d09d38bfa6071640b0df5556b0fcd6741aed677268d5142c6094976",
+      "sample_id": "rack-plate-final-blind-v2-000047",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "67ddca356855c5f210d6c5504b3f92d2fe51b978b037cee1e4adbe39a4e77ba2.npz",
+      "feature_npz_sha256": "dfaf179d3c9a6418439de688db9cb08905dbe5c01a306414d26ebdf7c0e97055",
+      "geometry_sha256": "67ddca356855c5f210d6c5504b3f92d2fe51b978b037cee1e4adbe39a4e77ba2",
+      "sample_id": "rack-plate-final-blind-v2-000048",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "4815dfaad71d99d940565148c7cc69af6a480f9413e781c044cbfd8e507f4edf.npz",
+      "feature_npz_sha256": "fe6b11dbd457b88b26f162d4372275c2937d9a9a8e3fbcc3a4eb55a477ea4882",
+      "geometry_sha256": "4815dfaad71d99d940565148c7cc69af6a480f9413e781c044cbfd8e507f4edf",
+      "sample_id": "rack-plate-final-blind-v2-000049",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "9de1b8e4fdb2d2b8a80c9cf300aa7406c5b9f36c2bbec2b053b81cd04ce14cb9.npz",
+      "feature_npz_sha256": "dfd980c6a973df52029cb0e24eb4f2a3e2f9c34d088877356db724f98e198fbf",
+      "geometry_sha256": "9de1b8e4fdb2d2b8a80c9cf300aa7406c5b9f36c2bbec2b053b81cd04ce14cb9",
+      "sample_id": "rack-plate-final-blind-v2-000050",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "380f83e80bd83bdc7e5308f085f60533ba58796d91891934dc7c3ffcd6506874.npz",
+      "feature_npz_sha256": "6c163645789b545235d0b46c8d7711456d83e939e5d36799d4e851a062a543c9",
+      "geometry_sha256": "380f83e80bd83bdc7e5308f085f60533ba58796d91891934dc7c3ffcd6506874",
+      "sample_id": "rack-plate-final-blind-v2-000051",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "c8f86998e2dc1b1e5b82fb96f41b004002b1f4b0e7f2bdecb8c2444c5ae9a944.npz",
+      "feature_npz_sha256": "0c5aeb83c60c0989d84b68047bc0d4dc389b3651064f25e0f7ba6ee7a1c79205",
+      "geometry_sha256": "c8f86998e2dc1b1e5b82fb96f41b004002b1f4b0e7f2bdecb8c2444c5ae9a944",
+      "sample_id": "rack-plate-final-blind-v2-000052",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "126378ef1896be331c2d3b4b3e7cd9ebaf3485c568fbed01e439baaac57aeb9b.npz",
+      "feature_npz_sha256": "c621d0242fa7c3558fc23359856aa76d5c16976663395ba2840d10f8dcd150f1",
+      "geometry_sha256": "126378ef1896be331c2d3b4b3e7cd9ebaf3485c568fbed01e439baaac57aeb9b",
+      "sample_id": "rack-plate-final-blind-v2-000053",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "115d087e16ab4bfc1579d9feb3ff518445c5f894335838d1b101d5b5b95276cd.npz",
+      "feature_npz_sha256": "4153f8f9339dc74d77e18c1669f045788586d33d4d45e44797f8444ffefc80bb",
+      "geometry_sha256": "115d087e16ab4bfc1579d9feb3ff518445c5f894335838d1b101d5b5b95276cd",
+      "sample_id": "rack-plate-final-blind-v2-000054",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "147a6dd7f856a7ab2daf47c81296cfc735c4590e09ea85b6022c813576688b0c.npz",
+      "feature_npz_sha256": "67401f18220453c37fa824aa0f1620348ae444d425beaef04fc64dc346b1e4ed",
+      "geometry_sha256": "147a6dd7f856a7ab2daf47c81296cfc735c4590e09ea85b6022c813576688b0c",
+      "sample_id": "rack-plate-final-blind-v2-000055",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "5fdcd1df08f5d6085090e1397fa0f92326e5de802937290264070558382b9e8a.npz",
+      "feature_npz_sha256": "1025e014e3a237b3f76084c86d1beaaa54deb32b2dc132df798c43a19b0e6017",
+      "geometry_sha256": "5fdcd1df08f5d6085090e1397fa0f92326e5de802937290264070558382b9e8a",
+      "sample_id": "rack-plate-final-blind-v2-000056",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "f95534700559879c41780ef6ed16c6a08daf1dedcc91af75469df841966f4119.npz",
+      "feature_npz_sha256": "bd7022442cc7a3901877216a27701ce14e9a48821a13b328d952f85f3cbde809",
+      "geometry_sha256": "f95534700559879c41780ef6ed16c6a08daf1dedcc91af75469df841966f4119",
+      "sample_id": "rack-plate-final-blind-v2-000057",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "46e34b6d5ad72e773bdfb86a8f2786f9ac0bf48958f816202e2dad4c4fee285f.npz",
+      "feature_npz_sha256": "f3f37f6631ea3bf15b85b482cfcc5f3f82a91ffca991fca02665b61d61400571",
+      "geometry_sha256": "46e34b6d5ad72e773bdfb86a8f2786f9ac0bf48958f816202e2dad4c4fee285f",
+      "sample_id": "rack-plate-final-blind-v2-000058",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "c6de43124a9eef7f0960daeaed19719d345fb9bc3d2df3bb6c007b9ba36a193a.npz",
+      "feature_npz_sha256": "c9ddd3f6d4b8ab8c85cea004a7a19ff985b32041f7893c296433be7e3e7a4620",
+      "geometry_sha256": "c6de43124a9eef7f0960daeaed19719d345fb9bc3d2df3bb6c007b9ba36a193a",
+      "sample_id": "rack-plate-final-blind-v2-000059",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "5f9b8c59e6c5b3231a32fffcf5b0aeca6699e8ecbf0d66ad3a6ec0c9f7cc441f.npz",
+      "feature_npz_sha256": "f819d1d9ed3cc9826105be47ad6875d7dd354831ff9f091b858a3220f0ef0eef",
+      "geometry_sha256": "5f9b8c59e6c5b3231a32fffcf5b0aeca6699e8ecbf0d66ad3a6ec0c9f7cc441f",
+      "sample_id": "rack-plate-final-blind-v2-000060",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "656577501a9ccf5f8ebd10c62df41259592e35e36e6667f24ef2c2c3e8e45d6b.npz",
+      "feature_npz_sha256": "b86d6370e4dcca80d53657af04dd21d0374d5412433066e92b7a61824d62d553",
+      "geometry_sha256": "656577501a9ccf5f8ebd10c62df41259592e35e36e6667f24ef2c2c3e8e45d6b",
+      "sample_id": "rack-plate-final-blind-v2-000061",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "ee3a4e4c62acac8ca191d5c6b88e7999815e2145c13c80284718fff4eb2e2222.npz",
+      "feature_npz_sha256": "664a01db37bd27ec1bf5c5dd81fefe2cebc4e7f9af79153a7cdb3c2f10ff5415",
+      "geometry_sha256": "ee3a4e4c62acac8ca191d5c6b88e7999815e2145c13c80284718fff4eb2e2222",
+      "sample_id": "rack-plate-final-blind-v2-000062",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "fdb07a57b978fbfe9d5d6e712b0c6240266832d3c05db751e6788c4dac2be08a.npz",
+      "feature_npz_sha256": "777585ebca365eb8850a242f169b59fe75e20675ff4b807a2d73a52e369aa1c2",
+      "geometry_sha256": "fdb07a57b978fbfe9d5d6e712b0c6240266832d3c05db751e6788c4dac2be08a",
+      "sample_id": "rack-plate-final-blind-v2-000063",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "1f2656e6247c22a08d60c90eec5f02fff9e0bd8038f551524df46c45c9260fb8.npz",
+      "feature_npz_sha256": "2d875060904838a6a958f7544ab808248384050bbc7b6e33eb732fcff0cb2f15",
+      "geometry_sha256": "1f2656e6247c22a08d60c90eec5f02fff9e0bd8038f551524df46c45c9260fb8",
+      "sample_id": "rack-plate-final-blind-v2-000064",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "b2c91dabcbf1cb2aa00e712af632284478daf35a60909ef72a9c42e1592eba45.npz",
+      "feature_npz_sha256": "c2c559fde2435fb1bd441af8ed1004c139feb0d7dcb6ab515533fe329f423746",
+      "geometry_sha256": "b2c91dabcbf1cb2aa00e712af632284478daf35a60909ef72a9c42e1592eba45",
+      "sample_id": "rack-plate-final-blind-v2-000065",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "23e55773eecfc43dfa3ad9b311bf6cd08db0958d5b633851dc18adb4e350c288.npz",
+      "feature_npz_sha256": "fc6b6d41fbf4a86a4075c550ef887367f43ee2fc82622742a4c60ca8439be6f3",
+      "geometry_sha256": "23e55773eecfc43dfa3ad9b311bf6cd08db0958d5b633851dc18adb4e350c288",
+      "sample_id": "rack-plate-final-blind-v2-000066",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "173aac37cb20fff3e96fc1ece901af3bb83c69729a8a59472a6b4634f94abd65.npz",
+      "feature_npz_sha256": "99d4cb893c10009327025a8b859fe5f7219a0592dc23412873e4e026d7032e73",
+      "geometry_sha256": "173aac37cb20fff3e96fc1ece901af3bb83c69729a8a59472a6b4634f94abd65",
+      "sample_id": "rack-plate-final-blind-v2-000067",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "59acd4a906df4cc7cd7ed45d03e9550bad6748f05a1bd427ee28cff2f721b880.npz",
+      "feature_npz_sha256": "978bc84345a29460ba4eb710d3bb802a274e5173db6177bfe1cf01850a0389a6",
+      "geometry_sha256": "59acd4a906df4cc7cd7ed45d03e9550bad6748f05a1bd427ee28cff2f721b880",
+      "sample_id": "rack-plate-final-blind-v2-000068",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "ad7f439ed8532e7005bb4803308c1081ed558b5818379288658849e6e6377c20.npz",
+      "feature_npz_sha256": "5e5a7a97e87e08c9c7821644ecd247b16d6f32773bf781d2b2a1bb4640a560e0",
+      "geometry_sha256": "ad7f439ed8532e7005bb4803308c1081ed558b5818379288658849e6e6377c20",
+      "sample_id": "rack-plate-final-blind-v2-000069",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "c648e8711d11a78057bdf869a50901936d67ac8c2155448f216fb3341d4136e2.npz",
+      "feature_npz_sha256": "f240058cb14f814079028a1c64ed4d5c3708e94555c2b97c2125f9d945452457",
+      "geometry_sha256": "c648e8711d11a78057bdf869a50901936d67ac8c2155448f216fb3341d4136e2",
+      "sample_id": "rack-plate-final-blind-v2-000070",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "98226d97eebd194fa97f39a65a56b01649680e753a5ced156a7694352cc1140e.npz",
+      "feature_npz_sha256": "0da5685d513b794f1ca5cb45251acf190d7b4630ffccc83b9395fd1a7892572f",
+      "geometry_sha256": "98226d97eebd194fa97f39a65a56b01649680e753a5ced156a7694352cc1140e",
+      "sample_id": "rack-plate-final-blind-v2-000071",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "c93de692e6d04f75f56e38b71d0dc8bf2bb84833f9cbe09b7399e4213a4a7fe9.npz",
+      "feature_npz_sha256": "fe809609d8caa7d3767923950371c5e1bb005177ff9dc56f85078a75a16a535e",
+      "geometry_sha256": "c93de692e6d04f75f56e38b71d0dc8bf2bb84833f9cbe09b7399e4213a4a7fe9",
+      "sample_id": "rack-plate-final-blind-v2-000072",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "3cd31a3b2301ef22d3d2c2e285057f100bdd2da3099dc0ae0d1c478f861c710a.npz",
+      "feature_npz_sha256": "e8dd4ed8f7e6a8ecd38050b458dc2ddf68fe37c7cb2061e8731796f00f05f5dd",
+      "geometry_sha256": "3cd31a3b2301ef22d3d2c2e285057f100bdd2da3099dc0ae0d1c478f861c710a",
+      "sample_id": "rack-plate-final-blind-v2-000073",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "e6d86668849b12081cce0209626786a2c88138effe1214c9cf24e34349659345.npz",
+      "feature_npz_sha256": "fbe2c746c2bd360c744011c4ced178ce6724bb308f2d751d2bd91e2763d5b1dc",
+      "geometry_sha256": "e6d86668849b12081cce0209626786a2c88138effe1214c9cf24e34349659345",
+      "sample_id": "rack-plate-final-blind-v2-000074",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "8e092093261d0a279256190a86f4dda2d9d9063b73b69a0f74f01d4b08fef60c.npz",
+      "feature_npz_sha256": "11e8850f2db9f284c0402655d10850fa61996a923cc4cfa2aa3e48d0d11df6b1",
+      "geometry_sha256": "8e092093261d0a279256190a86f4dda2d9d9063b73b69a0f74f01d4b08fef60c",
+      "sample_id": "rack-plate-final-blind-v2-000075",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "1b402fc453808652232afe753ace80c8b495569d8cc530cee94a494df042559a.npz",
+      "feature_npz_sha256": "58cf41d2de76e7f30834626b5014e7f78107bd7921543b002c028583379fea0d",
+      "geometry_sha256": "1b402fc453808652232afe753ace80c8b495569d8cc530cee94a494df042559a",
+      "sample_id": "rack-plate-final-blind-v2-000076",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "b4e73701a3aef66e9f49f2329c0cb2cc1fb3bf5fd8f37a53519352687051cc76.npz",
+      "feature_npz_sha256": "aece7b10d4dce32bac89ff075cc7666f36fe8f46d48c2ce25c7590cbd83263fd",
+      "geometry_sha256": "b4e73701a3aef66e9f49f2329c0cb2cc1fb3bf5fd8f37a53519352687051cc76",
+      "sample_id": "rack-plate-final-blind-v2-000077",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "702fae98278eaa05230143a27608ac04ba1c6f603d3a3ccc44067a26222f51df.npz",
+      "feature_npz_sha256": "ccb8008c3e2496d16e5ddeca638fd6ff75ce1bef9602423a1d6a137974f3f5d7",
+      "geometry_sha256": "702fae98278eaa05230143a27608ac04ba1c6f603d3a3ccc44067a26222f51df",
+      "sample_id": "rack-plate-final-blind-v2-000078",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "607b2469873c4a9d70891ee320aab901e1bd7fd6bc1ff47a433eb2aca5e55097.npz",
+      "feature_npz_sha256": "7b46ae83b4bf45d705b61838e743c6efedef2d6131b9153e6bf9ce022a0a060d",
+      "geometry_sha256": "607b2469873c4a9d70891ee320aab901e1bd7fd6bc1ff47a433eb2aca5e55097",
+      "sample_id": "rack-plate-final-blind-v2-000079",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "20b7261197be042513ff527cf6848fc43c7f15fa43c8cd8f5e85e6331415140c.npz",
+      "feature_npz_sha256": "df2744dc7989bb52d2ab2f347a8599ac7a71c7cea204720786af38bfb81fb95c",
+      "geometry_sha256": "20b7261197be042513ff527cf6848fc43c7f15fa43c8cd8f5e85e6331415140c",
+      "sample_id": "rack-plate-final-blind-v2-000080",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "ef52ca9a4759dec05c44aab9a26b4c44fce3a464dd7c8e4cef416b85c67e0c92.npz",
+      "feature_npz_sha256": "25f2428aaa4f14f1ec3b7e55c44351f6a44b17fe0cdec81ebd0714e82f44835e",
+      "geometry_sha256": "ef52ca9a4759dec05c44aab9a26b4c44fce3a464dd7c8e4cef416b85c67e0c92",
+      "sample_id": "rack-plate-final-blind-v2-000081",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "31bec6497ec85f82188ec82c0ec705ab7eb8e7f053be35e99f7608c4ee8a1df0.npz",
+      "feature_npz_sha256": "393027fbd01ac7e798785032e2d82f59b4dbedc73cb1c41b9b578018473e08ea",
+      "geometry_sha256": "31bec6497ec85f82188ec82c0ec705ab7eb8e7f053be35e99f7608c4ee8a1df0",
+      "sample_id": "rack-plate-final-blind-v2-000082",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "cd3b72ececd9cf9905b12767b460f5021bba965adf56825e6e4bc6743d69f6c2.npz",
+      "feature_npz_sha256": "bf4ed6c5a455356c893417f66ddc5c40ec04434568c904e663038a46451f6922",
+      "geometry_sha256": "cd3b72ececd9cf9905b12767b460f5021bba965adf56825e6e4bc6743d69f6c2",
+      "sample_id": "rack-plate-final-blind-v2-000083",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "d8c2378822ea170f332d758bf3ae500e0f1dc95037e5ccf99ecdcd3b6704cc72.npz",
+      "feature_npz_sha256": "cbc826bcc8345507733944cceeafebfc02832d818e25345728621bcc69dc2743",
+      "geometry_sha256": "d8c2378822ea170f332d758bf3ae500e0f1dc95037e5ccf99ecdcd3b6704cc72",
+      "sample_id": "rack-plate-final-blind-v2-000084",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "db3be33e0a05571173e3432c6477cde670f6ec8c47a8886e617115e2dade7b9f.npz",
+      "feature_npz_sha256": "c2676eef08ea6a7a22630722d9854857bc137ce01a5af4ecdd1f8315114dc8b8",
+      "geometry_sha256": "db3be33e0a05571173e3432c6477cde670f6ec8c47a8886e617115e2dade7b9f",
+      "sample_id": "rack-plate-final-blind-v2-000085",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "c07817083293bfa246d9949ba49ea686f2b8ec9a64ca51c8c0c04123ae02ff69.npz",
+      "feature_npz_sha256": "c9c1430771390efcdaefbd3e04346366faa54eb5e5e41d7202ff18a2c0b02e93",
+      "geometry_sha256": "c07817083293bfa246d9949ba49ea686f2b8ec9a64ca51c8c0c04123ae02ff69",
+      "sample_id": "rack-plate-final-blind-v2-000086",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "cab441a33fafe91f939baad09c16d85dc409975e89fe8b8b97100b79f45d9a41.npz",
+      "feature_npz_sha256": "654689bd1c4b115e5ff67258189c5271112844147d34c2027c3f2d1a17745d4e",
+      "geometry_sha256": "cab441a33fafe91f939baad09c16d85dc409975e89fe8b8b97100b79f45d9a41",
+      "sample_id": "rack-plate-final-blind-v2-000087",
+      "slot_count": 2048,
+      "split": "test"
+    },
+    {
+      "feature_npz": "a87a2da6d14baccdaefa393cb0df501a6ca85731b5939d475ba1a633074e4bf3.npz",
+      "feature_npz_sha256": "15635a377768d8f7ff444e8df9c89bf31bec09b00170acd42246575990794db2",
+      "geometry_sha256": "a87a2da6d14baccdaefa393cb0df501a6ca85731b5939d475ba1a633074e4bf3",
+      "sample_id": "rack-plate-final-blind-v2-000088",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "7453f987baddb5fe97450f63a4c30a74bca6f095df47e009c7d4e240b2241693.npz",
+      "feature_npz_sha256": "82000c4bbb6ca7b650ef5a515fd3a69e0c5ab4225984e2cdb8881f5359ab1026",
+      "geometry_sha256": "7453f987baddb5fe97450f63a4c30a74bca6f095df47e009c7d4e240b2241693",
+      "sample_id": "rack-plate-final-blind-v2-000089",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "93bec09f2b63f46274f9016e784f6cff59afb93bf63072cd9d0ce83d91b72e3e.npz",
+      "feature_npz_sha256": "7b45675d15f4e564b775e60901e99ae4147c123a2d53e37ad9f0c10681080e45",
+      "geometry_sha256": "93bec09f2b63f46274f9016e784f6cff59afb93bf63072cd9d0ce83d91b72e3e",
+      "sample_id": "rack-plate-final-blind-v2-000090",
+      "slot_count": 2048,
+      "split": "validation"
+    },
+    {
+      "feature_npz": "cd6c49bd0bc634ffa650f210dc7826d5574a2e498a3038700f51f5b6d1a0302c.npz",
+      "feature_npz_sha256": "49ac948f93f7b07e06e68a9f5b8de2a32cedd73d2d7ddb6c705a7f3fff1d41f2",
+      "geometry_sha256": "cd6c49bd0bc634ffa650f210dc7826d5574a2e498a3038700f51f5b6d1a0302c",
+      "sample_id": "rack-plate-final-blind-v2-000091",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "322121dc2687948beaf5201214f648befda649b69935ea4fc25d0bcbaddc3ae4.npz",
+      "feature_npz_sha256": "315466d7c35d40adec1f5372a5532d3f629693483314d81a17b64f8159ec493e",
+      "geometry_sha256": "322121dc2687948beaf5201214f648befda649b69935ea4fc25d0bcbaddc3ae4",
+      "sample_id": "rack-plate-final-blind-v2-000092",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "10781cbd61397acd2f8487c7bb2857da015130e9ecf04160f6a79c5b69bd63e7.npz",
+      "feature_npz_sha256": "e3956d479dd05ca68003bf0b25139034af642fdfbdca995b8725249e201834a0",
+      "geometry_sha256": "10781cbd61397acd2f8487c7bb2857da015130e9ecf04160f6a79c5b69bd63e7",
+      "sample_id": "rack-plate-final-blind-v2-000093",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "6efbd8f14bc61aa0094c47d86fde9be9a61d8f1a1f6ed0299bb84afdf7ce90ea.npz",
+      "feature_npz_sha256": "632d1401bd3f0797802b6e68e02884891745f834eedc80e84756d3201e95452e",
+      "geometry_sha256": "6efbd8f14bc61aa0094c47d86fde9be9a61d8f1a1f6ed0299bb84afdf7ce90ea",
+      "sample_id": "rack-plate-final-blind-v2-000094",
+      "slot_count": 2048,
+      "split": "train"
+    },
+    {
+      "feature_npz": "904f3912f49d90f180074cd68cf05cb07f7906ea43dbb532de8c258ae7c3d1d7.npz",
+      "feature_npz_sha256": "5d86e73c4b6155ba57f258b516de0d92bfe68570276d41abdc73c7fc5043521e",
+      "geometry_sha256": "904f3912f49d90f180074cd68cf05cb07f7906ea43dbb532de8c258ae7c3d1d7",
+      "sample_id": "rack-plate-final-blind-v2-000095",
+      "slot_count": 2048,
+      "split": "train"
+    }
+  ],
+  "scale_factor": 15.0,
+  "schema": "taxdpd.utonia-static-feature-cache/0.1",
+  "split_counts": {
+    "test": 12,
+    "train": 72,
+    "validation": 12
+  },
+  "test_npz_read": true,
+  "transform_scale": 0.5,
+  "transform_seed": 1701,
+  "utonia_checkpoint_sha256": "a0a2e5e234ce943082ae9ba26bcff74e285f16ed8d04fed5c36ffe8dc30ea353"
+}

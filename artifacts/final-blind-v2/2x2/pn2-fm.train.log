@@ -1,0 +1,11 @@
+{"epoch": 0, "train_loss": 0.3128618024703529, "validation_loss": 0.07395207757751147}
+{"epoch": 1, "train_loss": 0.023220611988411594, "validation_loss": 0.009991596918553114}
+{"epoch": 2, "train_loss": 0.008106196958882114, "validation_loss": 0.00604735790208603}
+{"epoch": 3, "train_loss": 0.00989115705144488, "validation_loss": 0.004339902079664171}
+{"epoch": 4, "train_loss": 0.0057442376823423225, "validation_loss": 0.004700182005763054}
+{"epoch": 5, "train_loss": 0.004575808354679288, "validation_loss": 0.005070936322833101}
+{"epoch": 6, "train_loss": 0.00444716971509883, "validation_loss": 0.0044040666543878615}
+{"epoch": 7, "train_loss": 0.00811127717477373, "validation_loss": 0.006050393761446078}
+{"epoch": 8, "train_loss": 0.005151307190923641, "validation_loss": 0.004095964172544579}
+{"epoch": 9, "train_loss": 0.0054539689865325475, "validation_loss": 0.005429599084891379}
+{"checkpoint": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/artifacts/final-blind-v2/2x2/pn2-fm.ckpt", "manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/artifacts/final-blind-v2/2x2/pn2-fm.json"}

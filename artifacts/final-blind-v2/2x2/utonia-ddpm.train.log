@@ -1,0 +1,11 @@
+{"epoch": 0, "train_loss": 1.0655029109782643, "validation_loss": 1.248369077841441}
+{"epoch": 1, "train_loss": 0.8156338328909543, "validation_loss": 0.8017618407805761}
+{"epoch": 2, "train_loss": 0.4856799617409706, "validation_loss": 0.6969914635022482}
+{"epoch": 3, "train_loss": 0.5344182978798118, "validation_loss": 0.26059161126613617}
+{"epoch": 4, "train_loss": 0.709113041482245, "validation_loss": 0.4619346141504745}
+{"epoch": 5, "train_loss": 0.24686420020750827, "validation_loss": 0.15577808860689402}
+{"epoch": 6, "train_loss": 0.22893352969549596, "validation_loss": 0.2414862879862388}
+{"epoch": 7, "train_loss": 0.27460900256927645, "validation_loss": 0.2951951913225154}
+{"epoch": 8, "train_loss": 0.1236253986781877, "validation_loss": 0.13508491730317473}
+{"epoch": 9, "train_loss": 0.1504568637141751, "validation_loss": 0.1254531986390551}
+{"checkpoint": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/artifacts/final-blind-v2/2x2/utonia-ddpm.ckpt", "manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/artifacts/final-blind-v2/2x2/utonia-ddpm.json"}
