@@ -1,9 +1,10 @@
 """Train PlaceGen-backed TAX3Dv2 FM or DDPM without the unavailable RPDiff tree.
 
 The controlled modes share the same dataset, PointNet++/DiT architecture and
-budget.  This runner intentionally avoids Lightning/W&B and publishes a small,
-auditable checkpoint plus a manifest.  It is a development/pilot runner, not a
-claim that the incomplete public TAX-DPD release reproduces the paper pipeline.
+budget.  The runner optionally writes TensorBoard/W&B metrics and publishes a
+small, auditable checkpoint plus a manifest.  It is a development/pilot runner,
+not a claim that the incomplete public TAX-DPD release reproduces the paper
+pipeline.
 """
 
 from __future__ import annotations
@@ -12,6 +13,7 @@ import argparse
 import hashlib
 import json
 import random
+import time
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,7 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from non_rigid.datasets.rigid import PlaceGenTaxDpdDataset
 from non_rigid.models.flow_matching import flow_matching_loss
@@ -105,6 +108,63 @@ def _batch(dataset: PlaceGenTaxDpdDataset, index: int, device: torch.device) -> 
         key: value.unsqueeze(0).to(device) if isinstance(value, torch.Tensor) else value
         for key, value in item.items()
     }
+
+
+class _TrainingLoggers:
+    def __init__(self, args: argparse.Namespace, cfg: Any) -> None:
+        self.writer: SummaryWriter | None = None
+        self.wandb_run: Any | None = None
+        if args.logger in {"tensorboard", "both"}:
+            log_dir = Path(args.log_dir or args.output_checkpoint.parent / "tensorboard").expanduser().resolve()
+            log_dir.mkdir(parents=True, exist_ok=True)
+            self.writer = SummaryWriter(log_dir=str(log_dir))
+            self.log_dir = log_dir
+        else:
+            self.log_dir = None
+        if args.logger in {"wandb", "both"}:
+            import wandb
+
+            self.wandb_run = wandb.init(
+                entity=args.wandb_entity,
+                project=args.wandb_project,
+                name=args.wandb_name,
+                tags=args.wandb_tags or None,
+                config={
+                    "mode": args.mode,
+                    "point_encoder": str(cfg.model.point_encoder),
+                    "epochs": args.epochs,
+                    "max_train": args.max_train,
+                    "max_validation": args.max_validation,
+                    "learning_rate": args.learning_rate,
+                    "noise_scale": float(
+                        cfg.model.fm_noise_scale
+                        if args.mode == "fm"
+                        else cfg.model.diff_noise_scale
+                    ),
+                    "seed": args.seed,
+                },
+            )
+
+    def log(self, epoch: int, train_loss: float, validation_loss: float, epoch_seconds: float) -> None:
+        values = {
+            "loss/train": train_loss,
+            "loss/validation": validation_loss,
+            "epoch/seconds": epoch_seconds,
+        }
+        if self.writer is not None:
+            self.writer.add_scalar("loss/train", train_loss, epoch)
+            self.writer.add_scalar("loss/validation", validation_loss, epoch)
+            self.writer.add_scalar("epoch/seconds", epoch_seconds, epoch)
+            self.writer.flush()
+        if self.wandb_run is not None:
+            self.wandb_run.log(values, step=epoch)
+
+    def close(self) -> None:
+        if self.writer is not None:
+            self.writer.flush()
+            self.writer.close()
+        if self.wandb_run is not None:
+            self.wandb_run.finish()
 
 
 def _loss_for_item(
@@ -243,7 +303,9 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
     best_validation = float("inf")
     best_state: dict[str, torch.Tensor] | None = None
     history: list[dict[str, Any]] = []
+    loggers = _TrainingLoggers(args, cfg)
     for epoch in range(args.epochs):
+        epoch_started = time.perf_counter()
         module.train()
         train_values: list[float] = []
         order = list(range(train_count))
@@ -278,6 +340,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         train_mean = float(np.mean(train_values))
         validation_mean = float(np.mean(validation_values))
         history.append({"epoch": epoch, "train_loss": train_mean, "validation_loss": validation_mean})
+        loggers.log(epoch, train_mean, validation_mean, time.perf_counter() - epoch_started)
         print(json.dumps(history[-1], sort_keys=True))
         if validation_mean < best_validation:
             best_validation = validation_mean
@@ -285,6 +348,7 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
                 key: value.detach().cpu().clone() for key, value in module.network.state_dict().items()
             }
     if best_state is None:
+        loggers.close()
         raise RuntimeError("no validation-selected checkpoint was produced")
     checkpoint = Path(args.output_checkpoint).expanduser().resolve()
     manifest_path = Path(args.output_manifest or checkpoint.with_suffix(".json")).expanduser().resolve()
@@ -411,11 +475,29 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         ),
         "inference_manifest_sha256": inference_manifest_sha,
         "history": history,
+        "logging": {
+            "backend": args.logger,
+            "tensorboard_log_dir": str(loggers.log_dir) if loggers.log_dir is not None else None,
+            "wandb_entity": args.wandb_entity if args.logger in {"wandb", "both"} else None,
+            "wandb_project": args.wandb_project if args.logger in {"wandb", "both"} else None,
+            "wandb_run_name": args.wandb_name if args.logger in {"wandb", "both"} else None,
+            "wandb_run_id": (
+                getattr(loggers.wandb_run, "id", None)
+                if args.logger in {"wandb", "both"}
+                else None
+            ),
+            "wandb_url": (
+                getattr(loggers.wandb_run, "url", None)
+                if args.logger in {"wandb", "both"}
+                else None
+            ),
+        },
         "planner_called": False,
         "simulator_called": False,
     }
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"checkpoint": str(checkpoint), "manifest": str(manifest_path)}, sort_keys=True))
+    loggers.close()
     return manifest
 
 
@@ -445,6 +527,12 @@ def main() -> int:
     parser.add_argument("--grad-clip-norm", type=float, default=1.0)
     parser.add_argument("--seed", type=int, default=20260831)
     parser.add_argument("--device")
+    parser.add_argument("--logger", choices=("none", "tensorboard", "wandb", "both"), default="none")
+    parser.add_argument("--log-dir", type=Path)
+    parser.add_argument("--wandb-entity", default="models-xi-an-jiaotong-university-9458")
+    parser.add_argument("--wandb-project", default="PlaceGen")
+    parser.add_argument("--wandb-name")
+    parser.add_argument("--wandb-tags", nargs="*")
     args = parser.parse_args()
     train(args)
     return 0
