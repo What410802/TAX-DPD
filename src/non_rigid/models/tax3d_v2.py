@@ -329,6 +329,11 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
         sample_ids = network_kwargs.pop("_utonia_sample_ids", None)
         if sample_ids is None:
             return network_kwargs
+        if str(getattr(self.model_cfg, "point_encoder", "")) not in {
+            "utonia",
+            "utonia_cached",
+        }:
+            return network_kwargs
         feature_encoder = getattr(getattr(self.network, "dit", None), "feature_encoder", None)
         if not hasattr(feature_encoder, "prepare_static_context"):
             raise RuntimeError("sample IDs require a Utonia feature encoder")

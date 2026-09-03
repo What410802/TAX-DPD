@@ -109,6 +109,7 @@ def test_ddpm_model_kwargs_consumes_cache_identity_before_network_call() -> None
             return (x0[:, :1], y[:, :1])
 
     module = SimpleNamespace(
+        model_cfg=SimpleNamespace(point_encoder="utonia_cached"),
         network=SimpleNamespace(dit=SimpleNamespace(feature_encoder=FeatureEncoder()))
     )
     x0 = torch.randn(1, 3, 4)
@@ -119,6 +120,22 @@ def test_ddpm_model_kwargs_consumes_cache_identity_before_network_call() -> None
     )
     assert "_utonia_sample_ids" not in actual
     assert actual["static_geometry"][0].shape == (1, 1, 4)
+
+
+def test_ddpm_model_kwargs_drops_ids_for_pointnet_encoder() -> None:
+    module = SimpleNamespace(
+        model_cfg=SimpleNamespace(point_encoder="pn2"),
+        network=SimpleNamespace(dit=SimpleNamespace(feature_encoder=object())),
+    )
+    x0 = torch.zeros(1, 3, 4)
+    y = torch.zeros(1, 3, 5)
+    actual = TAX3Dv2FixedFrameModule._ddpm_model_kwargs(
+        module,
+        {"x0": x0, "y": y, "_utonia_sample_ids": ["a"]},
+    )
+    assert set(actual) == {"x0", "y"}
+    assert actual["x0"] is x0
+    assert actual["y"] is y
 
 
 @pytest.mark.parametrize(
