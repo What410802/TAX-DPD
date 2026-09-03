@@ -316,6 +316,29 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
         # goal point cloud in scene frame, channel-first [B, 3, N]
         return batch["pc"].to(self.device).permute(0, 2, 1)
 
+    def _model_kwargs(self, batch: Dict) -> Dict[str, torch.Tensor]:
+        return self._ddpm_model_kwargs(super()._model_kwargs(batch))
+
+    def _ddpm_model_kwargs(
+        self,
+        model_kwargs: Dict[str, torch.Tensor],
+    ) -> Dict[str, torch.Tensor]:
+        """Consume Utonia cache identity before calling the DiT network."""
+
+        network_kwargs = dict(model_kwargs)
+        sample_ids = network_kwargs.pop("_utonia_sample_ids", None)
+        if sample_ids is None:
+            return network_kwargs
+        feature_encoder = getattr(getattr(self.network, "dit", None), "feature_encoder", None)
+        if not hasattr(feature_encoder, "prepare_static_context"):
+            raise RuntimeError("sample IDs require a Utonia feature encoder")
+        network_kwargs["static_geometry"] = feature_encoder.prepare_static_context(
+            network_kwargs["x0"],
+            network_kwargs["y"],
+            sample_ids=sample_ids,
+        )
+        return network_kwargs
+
     @torch.no_grad()
     def sample_candidates(
         self,
@@ -370,12 +393,11 @@ class TAX3Dv2FixedFrameModule(_TAX3Dv2BaseModule):
         action = pc_action.to(device)
         anchor = pc_anchor.to(device)
         batch_size, sample_size = action.shape[:2]
-        model_kwargs = {
+        model_kwargs = self._ddpm_model_kwargs({
             "y": anchor.permute(0, 2, 1),
             "x0": action.permute(0, 2, 1),
-        }
-        if sample_ids is not None:
-            model_kwargs["_utonia_sample_ids"] = sample_ids
+            **({"_utonia_sample_ids": sample_ids} if sample_ids is not None else {}),
+        })
         cuda_devices = []
         if device.type == "cuda":
             cuda_devices = [

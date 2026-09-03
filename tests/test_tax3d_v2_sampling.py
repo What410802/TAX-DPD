@@ -82,6 +82,13 @@ def test_sample_candidates_needs_no_ground_truth_and_is_seed_stable() -> None:
 
 def test_sample_candidates_forwards_optional_sample_ids_to_conditioning() -> None:
     module, _ = _module()
+
+    class FeatureEncoder:
+        def prepare_static_context(self, x0, y, sample_ids):
+            assert sample_ids == ["sample-0"]
+            return (x0[:, :1], y[:, :1])
+
+    module.network.dit = SimpleNamespace(feature_encoder=FeatureEncoder())
     action = torch.linspace(-1.0, 1.0, 12).reshape(1, 4, 3)
     anchor = torch.linspace(-2.0, 2.0, 15).reshape(1, 5, 3)
     module.sample_candidates(action, anchor, num_trials=1, seed=3, sample_ids=("sample-0",))
@@ -93,6 +100,25 @@ def test_sample_candidates_rejects_sample_id_batch_mismatch() -> None:
     anchor = torch.zeros(1, 5, 3)
     with pytest.raises(ValueError, match="sample_ids length"):
         module.sample_candidates(action, anchor, sample_ids=("a", "b"))
+
+
+def test_ddpm_model_kwargs_consumes_cache_identity_before_network_call() -> None:
+    class FeatureEncoder:
+        def prepare_static_context(self, x0, y, sample_ids):
+            assert sample_ids == ["sample-0"]
+            return (x0[:, :1], y[:, :1])
+
+    module = SimpleNamespace(
+        network=SimpleNamespace(dit=SimpleNamespace(feature_encoder=FeatureEncoder()))
+    )
+    x0 = torch.randn(1, 3, 4)
+    y = torch.randn(1, 3, 5)
+    actual = TAX3Dv2FixedFrameModule._ddpm_model_kwargs(
+        module,
+        {"x0": x0, "y": y, "_utonia_sample_ids": ["sample-0"]},
+    )
+    assert "_utonia_sample_ids" not in actual
+    assert actual["static_geometry"][0].shape == (1, 1, 4)
 
 
 @pytest.mark.parametrize(
