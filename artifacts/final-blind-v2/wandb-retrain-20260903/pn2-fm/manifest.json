@@ -1,0 +1,93 @@
+{
+  "architecture": {
+    "fm_solver": "heun",
+    "fm_steps": 20,
+    "joint_encode": true,
+    "learn_sigma": false,
+    "point_encoder": "pn2",
+    "rotation_corruption": false
+  },
+  "best_validation_loss": 0.003524065677387019,
+  "checkpoint_schema": "placegen.tax3dv2-fm-checkpoint/0.1",
+  "checkpoint_sha256": "9a133985ac6b32cc900b4326638e6d9f5818439095c3ffe0439b25aebf9d29b3",
+  "data_root": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/training",
+  "device": "cuda",
+  "epochs": 10,
+  "history": [
+    {
+      "epoch": 0,
+      "train_loss": 0.3127654778460662,
+      "validation_loss": 0.07407494634389877
+    },
+    {
+      "epoch": 1,
+      "train_loss": 0.023169945783188775,
+      "validation_loss": 0.01120787113904953
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.007630796605048494,
+      "validation_loss": 0.005694966724452873
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.007051224448433559,
+      "validation_loss": 0.004109138312439124
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.006067463995552518,
+      "validation_loss": 0.005499803480536987
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.005045707667401682,
+      "validation_loss": 0.004947305501749118
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.004651764352780042,
+      "validation_loss": 0.00417953752912581
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.00654311169960743,
+      "validation_loss": 0.004024744848720729
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.0040307946522564935,
+      "validation_loss": 0.003524065677387019
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.003854232232293321,
+      "validation_loss": 0.004232755105476826
+    }
+  ],
+  "inference_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/inference/manifest.json",
+  "inference_manifest_sha256": "bbea3c94751c825aa46a1556f0b27f301bf2435296c5abcda5ed0ef12efcdec5",
+  "learning_rate": 0.0001,
+  "logging": {
+    "backend": "both",
+    "tensorboard_log_dir": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/pn2-fm/tensorboard",
+    "wandb_entity": "models-xi-an-jiaotong-university-9458",
+    "wandb_project": "PlaceGen",
+    "wandb_run_id": "ci9jgg4d",
+    "wandb_run_name": "final-blind-v2-pn2-fm-20260903",
+    "wandb_url": "https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen/runs/ci9jgg4d"
+  },
+  "mode": "fm",
+  "model": "TAX3Dv2-fixed-frame-euclidean-condot-fm",
+  "model_capability": "TAX-DPD-reconstructed-fixed-frame-euclidean-fm",
+  "model_state_sha256": "90ee6dbf2b160566b291f752e1ad427d59082bdbc6b6998bcf79328980af7a5c",
+  "noise_scale": 0.08,
+  "planner_called": false,
+  "profile": "placegen.tax3dv2-training-run/0.1",
+  "seed": 20260903,
+  "simulator_called": false,
+  "train_count": 72,
+  "training_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/manifest.json",
+  "training_manifest_sha256": "4362ef8108ef952b3d850f6ae44f28b81ec4868b52a08495e201048e9c4ef6b2",
+  "validation_count": 12
+}

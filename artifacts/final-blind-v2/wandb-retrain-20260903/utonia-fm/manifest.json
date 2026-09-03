@@ -1,0 +1,94 @@
+{
+  "architecture": {
+    "fm_solver": "heun",
+    "fm_steps": 20,
+    "joint_encode": true,
+    "learn_sigma": false,
+    "point_encoder": "utonia_cached",
+    "rotation_corruption": false,
+    "utonia_feature_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/TAX-DPD/artifacts/final-blind-v2/utonia-feature-cache/manifest.json"
+  },
+  "best_validation_loss": 0.0009805458903429098,
+  "checkpoint_schema": "placegen.tax3dv2-fm-checkpoint/0.1",
+  "checkpoint_sha256": "cbd7ed4160f8273e979f354b846aa4cb7726a645a5dca9b3faf360d2e07694c8",
+  "data_root": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/training",
+  "device": "cuda",
+  "epochs": 10,
+  "history": [
+    {
+      "epoch": 0,
+      "train_loss": 0.3098021632888251,
+      "validation_loss": 0.05880642185608546
+    },
+    {
+      "epoch": 1,
+      "train_loss": 0.014773305984110467,
+      "validation_loss": 0.007923018924581507
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.006167466926854104,
+      "validation_loss": 0.004856150597333908
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.0047454464753779275,
+      "validation_loss": 0.00292167832958512
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.005321031504233058,
+      "validation_loss": 0.003936278973318015
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.00417978455192901,
+      "validation_loss": 0.0046117758805242675
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.00367294674894462,
+      "validation_loss": 0.0020717149697399386
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.003768686467083171,
+      "validation_loss": 0.0022846009572579837
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.002273006350151263,
+      "validation_loss": 0.0009805458903429098
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.002240853994913373,
+      "validation_loss": 0.002437844147304228
+    }
+  ],
+  "inference_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/inference/manifest.json",
+  "inference_manifest_sha256": "bbea3c94751c825aa46a1556f0b27f301bf2435296c5abcda5ed0ef12efcdec5",
+  "learning_rate": 0.0001,
+  "logging": {
+    "backend": "both",
+    "tensorboard_log_dir": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/utonia-fm/tensorboard",
+    "wandb_entity": "models-xi-an-jiaotong-university-9458",
+    "wandb_project": "PlaceGen",
+    "wandb_run_id": "d3z79yz0",
+    "wandb_run_name": "final-blind-v2-utonia-fm-20260903",
+    "wandb_url": "https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen/runs/d3z79yz0"
+  },
+  "mode": "fm",
+  "model": "TAX3Dv2-fixed-frame-euclidean-condot-fm",
+  "model_capability": "TAX-DPD-reconstructed-fixed-frame-euclidean-fm",
+  "model_state_sha256": "db062dac5eee5a281834dceccfc99fb5b92a2c72a5c79f75307e8f1be0c2ac1b",
+  "noise_scale": 0.08,
+  "planner_called": false,
+  "profile": "placegen.tax3dv2-training-run/0.1",
+  "seed": 20260903,
+  "simulator_called": false,
+  "train_count": 72,
+  "training_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen/outputs/taxpose/rack-plate-final-blind-v2/manifest.json",
+  "training_manifest_sha256": "4362ef8108ef952b3d850f6ae44f28b81ec4868b52a08495e201048e9c4ef6b2",
+  "validation_count": 12
+}

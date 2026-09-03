@@ -1,0 +1,35 @@
+wandb: Currently logged in as: what410802 (models-xi-an-jiaotong-university-9458). Use `wandb login --relogin` to force relogin
+wandb: - Waiting for wandb.init()...wandb: \ Waiting for wandb.init()...wandb: | Waiting for wandb.init()...wandb: wandb version 0.29.0 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.15.4
+wandb: Run data is saved locally in /DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/pn2-fm/wandb/wandb/run-20260903_195714-ci9jgg4d
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run final-blind-v2-pn2-fm-20260903
+wandb: ⭐️ View project at https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen
+wandb: 🚀 View run at https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen/runs/ci9jgg4d
+wandb: Waiting for W&B process to finish... (success).
+wandb: 
+wandb: Run history:
+wandb:   epoch/seconds █▁▁▂▁▁▁▁▁▁
+wandb:      loss/train █▁▁▁▁▁▁▁▁▁
+wandb: loss/validation █▂▁▁▁▁▁▁▁▁
+wandb: 
+wandb: Run summary:
+wandb:   epoch/seconds 3.04069
+wandb:      loss/train 0.00385
+wandb: loss/validation 0.00423
+wandb: 
+wandb: 🚀 View run final-blind-v2-pn2-fm-20260903 at: https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen/runs/ci9jgg4d
+wandb: Synced 6 W&B file(s), 0 media file(s), 2 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/pn2-fm/wandb/wandb/run-20260903_195714-ci9jgg4d/logs
+{"epoch": 0, "train_loss": 0.3127654778460662, "validation_loss": 0.07407494634389877}
+{"epoch": 1, "train_loss": 0.023169945783188775, "validation_loss": 0.01120787113904953}
+{"epoch": 2, "train_loss": 0.007630796605048494, "validation_loss": 0.005694966724452873}
+{"epoch": 3, "train_loss": 0.007051224448433559, "validation_loss": 0.004109138312439124}
+{"epoch": 4, "train_loss": 0.006067463995552518, "validation_loss": 0.005499803480536987}
+{"epoch": 5, "train_loss": 0.005045707667401682, "validation_loss": 0.004947305501749118}
+{"epoch": 6, "train_loss": 0.004651764352780042, "validation_loss": 0.00417953752912581}
+{"epoch": 7, "train_loss": 0.00654311169960743, "validation_loss": 0.004024744848720729}
+{"epoch": 8, "train_loss": 0.0040307946522564935, "validation_loss": 0.003524065677387019}
+{"epoch": 9, "train_loss": 0.003854232232293321, "validation_loss": 0.004232755105476826}
+{"checkpoint": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/pn2-fm/model.pth", "manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/pn2-fm/manifest.json"}

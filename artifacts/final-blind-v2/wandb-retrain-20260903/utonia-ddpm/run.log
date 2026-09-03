@@ -1,0 +1,35 @@
+wandb: Currently logged in as: what410802 (models-xi-an-jiaotong-university-9458). Use `wandb login --relogin` to force relogin
+wandb: - Waiting for wandb.init()...wandb: \ Waiting for wandb.init()...wandb: wandb version 0.29.0 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.15.4
+wandb: Run data is saved locally in /DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/utonia-ddpm/wandb/wandb/run-20260903_200030-avtll0fy
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run final-blind-v2-utonia-ddpm-20260903
+wandb: ⭐️ View project at https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen
+wandb: 🚀 View run at https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen/runs/avtll0fy
+wandb: Waiting for W&B process to finish... (success).
+wandb: 
+wandb: Run history:
+wandb:   epoch/seconds █▁▂▂▂▁▁▁▁▁
+wandb:      loss/train █▆▄▄▅▂▂▂▁▁
+wandb: loss/validation █▅▅▂▃▁▂▂▁▁
+wandb: 
+wandb: Run summary:
+wandb:   epoch/seconds 1.63035
+wandb:      loss/train 0.15042
+wandb: loss/validation 0.12508
+wandb: 
+wandb: 🚀 View run final-blind-v2-utonia-ddpm-20260903 at: https://wandb.ai/models-xi-an-jiaotong-university-9458/PlaceGen/runs/avtll0fy
+wandb: Synced 6 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: /DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/utonia-ddpm/wandb/wandb/run-20260903_200030-avtll0fy/logs
+{"epoch": 0, "train_loss": 1.0655029287768736, "validation_loss": 1.2483687326312065}
+{"epoch": 1, "train_loss": 0.815636313934293, "validation_loss": 0.8017914357284704}
+{"epoch": 2, "train_loss": 0.48567578657012844, "validation_loss": 0.6969543776164452}
+{"epoch": 3, "train_loss": 0.5344106016887559, "validation_loss": 0.2606164614359538}
+{"epoch": 4, "train_loss": 0.7091103734500293, "validation_loss": 0.4619579029579957}
+{"epoch": 5, "train_loss": 0.2468508682731125, "validation_loss": 0.15563434936727086}
+{"epoch": 6, "train_loss": 0.22896004191392827, "validation_loss": 0.24178749384979406}
+{"epoch": 7, "train_loss": 0.27465769338111085, "validation_loss": 0.2952186866508176}
+{"epoch": 8, "train_loss": 0.12370548183874537, "validation_loss": 0.1349977293672661}
+{"epoch": 9, "train_loss": 0.15041613001893792, "validation_loss": 0.12507894650722542}
+{"checkpoint": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/utonia-ddpm/model.pth", "manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/wandb-retrain-20260903/utonia-ddpm/manifest.json"}
