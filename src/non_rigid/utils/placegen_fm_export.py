@@ -69,6 +69,46 @@ def _exact_fields(value: dict[str, Any], expected: frozenset[str], name: str) ->
         )
 
 
+def _exact_fields_with_optional(
+    value: dict[str, Any],
+    expected: frozenset[str],
+    optional: frozenset[str],
+    name: str,
+) -> None:
+    """Accept a versioned optional extension without permitting arbitrary fields."""
+
+    allowed = expected | optional
+    if not expected.issubset(value) or not frozenset(value).issubset(allowed):
+        raise ValueError(
+            f"{name} fields must match schema exactly; "
+            f"missing={sorted(expected.difference(value))}, "
+            f"unexpected={sorted(set(value).difference(allowed))}"
+        )
+
+
+def _validate_sampling_record(value: Any, name: str) -> None:
+    record = _mapping(value, name)
+    _exact_fields(
+        record,
+        frozenset(
+            {
+                "action_indices_sha256",
+                "anchor_indices_sha256",
+                "method",
+                "sample_seed",
+            }
+        ),
+        name,
+    )
+    if record.get("method") != "seeded_random_permutation":
+        raise ValueError(f"{name}.method is unsupported")
+    sample_seed = record.get("sample_seed")
+    if isinstance(sample_seed, bool) or not isinstance(sample_seed, int) or sample_seed < 0:
+        raise ValueError(f"{name}.sample_seed must be a non-negative integer")
+    _sha256(record.get("action_indices_sha256"), f"{name}.action_indices_sha256")
+    _sha256(record.get("anchor_indices_sha256"), f"{name}.anchor_indices_sha256")
+
+
 def _regular_json(path: Path | str, name: str) -> tuple[Path, dict[str, Any]]:
     supplied = Path(path).expanduser()
     if supplied.is_symlink() or not supplied.is_file():
@@ -185,7 +225,7 @@ def load_native_inference_index(path: Path | str) -> NativeInferenceIndex:
             "split_assignment",
         }
     )
-    _exact_fields(manifest, expected_top, "inference manifest")
+    _exact_fields_with_optional(manifest, expected_top, frozenset({"sampling"}), "inference manifest")
     if manifest.get("profile") != INFERENCE_PROFILE:
         raise ValueError("unexpected native PlaceGen inference manifest profile")
     if (
@@ -196,6 +236,16 @@ def load_native_inference_index(path: Path | str) -> NativeInferenceIndex:
         raise ValueError("inference manifest must be target-free and evaluation-valid")
     if manifest.get("point_counts") != EXPECTED_POINT_COUNTS:
         raise ValueError("unexpected native PlaceGen inference point counts")
+    if "sampling" in manifest:
+        sampling = _mapping(manifest["sampling"], "sampling")
+        if sampling.get("method") != "seeded_random_permutation":
+            raise ValueError("unsupported input sampling method")
+        if sampling.get("profile") != "placegen.fixed-count-seeded-random-permutation/0.1":
+            raise ValueError("unexpected input sampling profile")
+        if sampling.get("replacement") is not False:
+            raise ValueError("input sampling must be without replacement")
+        if sampling.get("draw_order") != ["parent", "child"]:
+            raise ValueError("unexpected input sampling draw order")
     assignment = _mapping(manifest.get("split_assignment"), "split_assignment")
     _exact_fields(
         assignment,
@@ -222,7 +272,9 @@ def load_native_inference_index(path: Path | str) -> NativeInferenceIndex:
     )
     for index, raw in enumerate(raw_samples):
         sample = _mapping(raw, f"samples[{index}]")
-        _exact_fields(sample, sample_fields, f"samples[{index}]")
+        _exact_fields_with_optional(sample, sample_fields, frozenset({"sampling"}), f"samples[{index}]")
+        if "sampling" in sample:
+            _validate_sampling_record(sample["sampling"], f"samples[{index}].sampling")
         sample_id = sample.get("sample_id")
         if not isinstance(sample_id, str) or not sample_id or sample_id in seen:
             raise ValueError("inference sample IDs must be unique non-empty strings")
