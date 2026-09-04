@@ -13,7 +13,6 @@ import numpy as np
 TRAINING_PROFILE = "placegen.taxpose-rpdiff/0.1"
 INFERENCE_PROFILE = "placegen.taxpose-inference-index/0.1"
 SPLITS = ("train", "validation", "test")
-EXPECTED_SPLIT_COUNTS = {"train": 72, "validation": 12, "test": 12}
 EXPECTED_POINT_COUNTS = {"action": 1024, "anchor": 1024}
 OBSERVATION_FIELDS = frozenset(
     {
@@ -58,6 +57,16 @@ def _mapping(value: Any, name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise TypeError(f"{name} must be a JSON object")
     return value
+
+
+def _split_counts(value: Any, name: str) -> dict[str, int]:
+    counts = _mapping(value, name)
+    if set(counts) != set(SPLITS):
+        raise ValueError(f"{name} must contain exactly {list(SPLITS)}")
+    for split, count in counts.items():
+        if isinstance(count, bool) or not isinstance(count, int) or count <= 0:
+            raise ValueError(f"{name}.{split} must be a positive integer")
+    return {split: int(counts[split]) for split in SPLITS}
 
 
 def _exact_fields(value: dict[str, Any], expected: frozenset[str], name: str) -> None:
@@ -150,6 +159,7 @@ class NativeInferenceIndex:
     split_assignment_sha256: str
     native_dataset_sha256: str
     point_counts: dict[str, int]
+    split_counts: dict[str, int]
     samples_by_split: dict[str, tuple[NativeInferenceSample, ...]]
 
 
@@ -180,9 +190,8 @@ def load_native_export_identity(
         raise ValueError("training export cannot make a quality claim")
     if training.get("point_counts") != EXPECTED_POINT_COUNTS:
         raise ValueError("unexpected native PlaceGen point counts")
-    if training.get("split_counts") != EXPECTED_SPLIT_COUNTS:
-        raise ValueError("unexpected native PlaceGen split counts")
-    if training.get("sample_count") != sum(EXPECTED_SPLIT_COUNTS.values()):
+    split_counts = _split_counts(training.get("split_counts"), "split_counts")
+    if training.get("sample_count") != sum(split_counts.values()):
         raise ValueError("unexpected native PlaceGen sample count")
     assignment = _mapping(training.get("split_assignment"), "split_assignment")
     assignment_sha = _sha256(assignment.get("manifest_sha256"), "manifest_sha256")
@@ -193,6 +202,8 @@ def load_native_export_identity(
         raise ValueError("training/inference native dataset identities differ")
     if dict(training["point_counts"]) != inference.point_counts:
         raise ValueError("training/inference point counts differ")
+    if split_counts != inference.split_counts:
+        raise ValueError("training/inference split counts differ")
     return NativeExportIdentity(
         training_manifest_path=training_path,
         training_manifest_sha256=sha256_file(training_path),
@@ -201,7 +212,7 @@ def load_native_export_identity(
         split_assignment_sha256=assignment_sha,
         native_dataset_sha256=native_sha,
         point_counts=dict(training["point_counts"]),
-        split_counts=dict(training["split_counts"]),
+        split_counts=split_counts,
     )
 
 
@@ -316,14 +327,14 @@ def load_native_inference_index(path: Path | str) -> NativeInferenceIndex:
             )
         )
     counts = {split: len(samples[split]) for split in SPLITS}
-    if counts != EXPECTED_SPLIT_COUNTS:
-        raise ValueError(f"unexpected inference split counts: {counts!r}")
+    _split_counts(counts, "inference split counts")
     return NativeInferenceIndex(
         manifest_path=manifest_path,
         manifest_sha256=sha256_file(manifest_path),
         split_assignment_sha256=assignment_sha,
         native_dataset_sha256=native_sha,
         point_counts=dict(manifest["point_counts"]),
+        split_counts=counts,
         samples_by_split={
             split: tuple(sorted(samples[split], key=lambda item: item.sample_id))
             for split in SPLITS
@@ -396,7 +407,6 @@ def load_fm_observation(
 
 __all__ = [
     "EXPECTED_POINT_COUNTS",
-    "EXPECTED_SPLIT_COUNTS",
     "FMObservation",
     "INFERENCE_PROFILE",
     "NativeExportIdentity",

@@ -81,8 +81,25 @@ def _load_placegen_manifests(
     if inference.get("point_counts") != training.get("point_counts"):
         raise ValueError("training/inference point counts differ")
     split_counts = training.get("split_counts")
-    if split_counts != {"train": 72, "validation": 12, "test": 12}:
-        raise ValueError(f"unexpected native PlaceGen split counts: {split_counts!r}")
+    if (
+        not isinstance(split_counts, dict)
+        or set(split_counts) != {"train", "validation", "test"}
+        or any(
+            isinstance(value, bool) or not isinstance(value, int) or value <= 0
+            for value in split_counts.values()
+        )
+    ):
+        raise ValueError(f"invalid native PlaceGen split counts: {split_counts!r}")
+    if training.get("sample_count") != sum(split_counts.values()):
+        raise ValueError("native PlaceGen split counts do not match sample_count")
+    inference_counts = {split: 0 for split in split_counts}
+    for sample in inference.get("samples", []):
+        split = sample.get("split") if isinstance(sample, dict) else None
+        if split not in inference_counts:
+            raise ValueError(f"invalid inference split: {split!r}")
+        inference_counts[split] += 1
+    if inference_counts != split_counts:
+        raise ValueError("training/inference split counts differ")
     if inference.get("sample_count") != training.get("sample_count"):
         raise ValueError("training/inference sample counts differ")
     training_assignment = training.get("split_assignment", {})

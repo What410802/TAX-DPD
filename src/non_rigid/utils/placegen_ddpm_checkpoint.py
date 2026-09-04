@@ -65,6 +65,22 @@ def validate_ddpm_checkpoint_payload(payload: Any) -> dict[str, Any]:
     }
     if not isinstance(dataset, dict) or set(dataset) != dataset_required:
         raise ValueError("DDPM checkpoint dataset provenance fields are invalid")
+    if not isinstance(dataset["point_counts"], dict) or set(dataset["point_counts"]) != {
+        "action",
+        "anchor",
+    }:
+        raise ValueError("checkpoint point_counts are invalid")
+    if not isinstance(dataset["split_counts"], dict) or set(dataset["split_counts"]) != {
+        "train",
+        "validation",
+        "test",
+    }:
+        raise ValueError("checkpoint split_counts are invalid")
+    if any(
+        isinstance(value, bool) or not isinstance(value, int) or value <= 0
+        for value in dataset["split_counts"].values()
+    ):
+        raise ValueError("checkpoint split_counts must be positive integers")
     for name in (
         "training_manifest_sha256",
         "inference_manifest_sha256",

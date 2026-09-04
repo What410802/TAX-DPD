@@ -105,6 +105,11 @@ def validate_fm_checkpoint_payload(payload: Any) -> dict[str, Any]:
         "test",
     }:
         raise ValueError("checkpoint split_counts are invalid")
+    if any(
+        isinstance(value, bool) or not isinstance(value, int) or value <= 0
+        for value in dataset["split_counts"].values()
+    ):
+        raise ValueError("checkpoint split_counts must be positive integers")
     training = payload["training"]
     if not isinstance(training, dict):
         raise TypeError("checkpoint training provenance must be a mapping")

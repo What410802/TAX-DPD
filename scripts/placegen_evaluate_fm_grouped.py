@@ -10,17 +10,13 @@ from typing import Any
 import numpy as np
 from scipy.spatial import cKDTree
 
-from non_rigid.utils.placegen_fm_export import (
-    EXPECTED_SPLIT_COUNTS,
-    load_native_export_identity,
-    sha256_file,
-)
+from non_rigid.utils.placegen_fm_export import load_native_export_identity, sha256_file
 
 PREDICTION_SCHEMAS = {
     "placegen.tax3dv2-fm-grouped-prediction-report/0.1":
-        "placegen.tax3dv2-fm-test-evaluation/0.1",
+        "placegen.tax3dv2-fm-test-evaluation/0.2",
     "placegen.tax3dv2-ddpm-grouped-prediction-report/0.1":
-        "placegen.tax3dv2-ddpm-test-evaluation/0.1",
+        "placegen.tax3dv2-ddpm-test-evaluation/0.2",
 }
 
 
@@ -57,7 +53,35 @@ def _ordered_point_rmse_mm(
     )
 
 
+def _success_flags(
+    *,
+    translation_error_mm: float,
+    rotation_error_deg: float,
+    ordered_point_rmse_mm: float,
+    translation_threshold_mm: float,
+    rotation_threshold_deg: float,
+    ordered_rmse_threshold_mm: float,
+) -> dict[str, bool]:
+    translation = translation_error_mm < translation_threshold_mm
+    rotation = rotation_error_deg < rotation_threshold_deg
+    ordered_rmse = ordered_point_rmse_mm < ordered_rmse_threshold_mm
+    return {
+        "translation": translation,
+        "rotation": rotation,
+        "ordered_rmse": ordered_rmse,
+        "pose": translation and rotation,
+        "pose_and_ordered_rmse": translation and rotation and ordered_rmse,
+    }
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    thresholds = {
+        "translation_mm": float(args.translation_threshold_mm),
+        "rotation_deg": float(args.rotation_threshold_deg),
+        "ordered_rmse_mm": float(args.ordered_rmse_threshold_mm),
+    }
+    if any(not np.isfinite(value) or value <= 0.0 for value in thresholds.values()):
+        raise ValueError("success thresholds must be finite and positive")
     output = Path(args.output_json).expanduser()
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"refusing to overwrite evaluation report: {output}")
@@ -81,7 +105,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             f"prediction report split {split!r} does not match evaluator split {args.split!r}"
         )
     records = prediction.get("predictions")
-    if not isinstance(records, list) or len(records) != EXPECTED_SPLIT_COUNTS[split]:
+    if not isinstance(records, list) or len(records) != identity.split_counts[split]:
         raise ValueError(f"prediction report does not cover the complete {split} split")
 
     training_manifest = json.loads(identity.training_manifest_path.read_text(encoding="utf-8"))
@@ -90,7 +114,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         for sample in training_manifest["samples"]
         if sample["split"] == split
     }
-    rows: list[dict[str, float | str]] = []
+    rows: list[dict[str, Any]] = []
     for record in records:
         sample_id = record.get("sample_id")
         if sample_id not in samples or record.get("split") != split:
@@ -130,6 +154,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         symmetric_chamfer_mm = float(
             (pred_to_target.mean() + target_to_pred.mean()) * 500.0
         )
+        success = _success_flags(
+            translation_error_mm=translation_mm,
+            rotation_error_deg=rotation_deg,
+            ordered_point_rmse_mm=ordered_rmse_mm,
+            translation_threshold_mm=thresholds["translation_mm"],
+            rotation_threshold_deg=thresholds["rotation_deg"],
+            ordered_rmse_threshold_mm=thresholds["ordered_rmse_mm"],
+        )
         rows.append(
             {
                 "sample_id": sample_id,
@@ -137,6 +169,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "rotation_error_deg": rotation_deg,
                 "ordered_point_rmse_mm": ordered_rmse_mm,
                 "symmetric_chamfer_mm": symmetric_chamfer_mm,
+                "success": success,
             }
         )
     metrics = {
@@ -159,8 +192,22 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "pass_point_rmse_lt20mm": sum(
                 float(row["ordered_point_rmse_mm"]) < 20.0 for row in rows
             ),
+            "success_count": {
+                name: sum(bool(row["success"][name]) for row in rows)
+                for name in (
+                    "translation",
+                    "rotation",
+                    "ordered_rmse",
+                    "pose",
+                    "pose_and_ordered_rmse",
+                )
+            },
         }
     )
+    metrics["success_rate"] = {
+        name: float(count / len(rows))
+        for name, count in metrics["success_count"].items()
+    }
     evaluation_schema = PREDICTION_SCHEMAS[prediction_schema].replace(
         "-test-evaluation/", f"-{split}-evaluation/"
     )
@@ -178,6 +225,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "test_sample_count": len(rows) if split == "test" else None,
         "candidate_index": args.candidate_index,
         "candidate_selection": "fixed-index-no-oracle",
+        "success_criteria": {
+            **thresholds,
+            "pose": "translation AND rotation",
+            "pose_and_ordered_rmse": "translation AND rotation AND ordered_rmse",
+            "physical_execution_required": False,
+            "forbidden_penetration_checked": False,
+            "settling_stability_checked": False,
+        },
         "metrics": metrics,
         "samples": rows,
         "ground_truth_used_by_evaluator": True,
@@ -199,6 +254,13 @@ def main() -> None:
     parser.add_argument("--output-json", type=Path, required=True)
     parser.add_argument("--candidate-index", type=int, default=0)
     parser.add_argument("--split", choices=("train", "validation", "test"), default="test")
+    parser.add_argument("--translation-threshold-mm", type=float, default=6.0)
+    parser.add_argument(
+        "--rotation-threshold-deg",
+        type=float,
+        default=float(np.degrees(0.05)),
+    )
+    parser.add_argument("--ordered-rmse-threshold-mm", type=float, default=6.0)
     print(json.dumps(run(parser.parse_args()), sort_keys=True))
 
 

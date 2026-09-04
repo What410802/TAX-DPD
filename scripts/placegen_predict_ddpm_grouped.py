@@ -15,7 +15,6 @@ from non_rigid.utils.placegen_ddpm_checkpoint import (
     load_ddpm_checkpoint,
 )
 from non_rigid.utils.placegen_fm_export import (
-    EXPECTED_SPLIT_COUNTS,
     load_fm_observation,
     load_native_inference_index,
     sha256_file,
@@ -49,6 +48,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("checkpoint and inference use different native datasets")
     if checkpoint_dataset["point_counts"] != inference.point_counts:
         raise ValueError("checkpoint and inference use different point counts")
+    if checkpoint_dataset["split_counts"] != inference.split_counts:
+        raise ValueError("checkpoint and inference use different split counts")
     cfg = loaded.payload["config"]
     scale_factor = float(cfg["dataset"].get("pcd_scale_factor", 1.0))
 
@@ -86,7 +87,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             }
         )
     duration = time.perf_counter() - started
-    if len(records) != EXPECTED_SPLIT_COUNTS[args.split]:
+    if len(records) != inference.split_counts[args.split]:
         raise RuntimeError(f"DDPM prediction did not cover the complete {args.split} split")
     checkpoint_path = Path(args.checkpoint).expanduser().resolve(strict=True)
     model_cfg = cfg["model"]
