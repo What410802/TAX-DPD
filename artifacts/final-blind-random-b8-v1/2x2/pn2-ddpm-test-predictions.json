@@ -1,0 +1,1085 @@
+{
+  "architecture": {
+    "diff_noise_scale": 1.0,
+    "diffusion_inference_steps": 100,
+    "diffusion_steps": 100,
+    "learn_sigma": true,
+    "pcd_scale_factor": 15.0,
+    "point_encoder": "pn2",
+    "rotation_noise_scale_deg": 45.0
+  },
+  "candidate_count_per_sample": 1,
+  "checkpoint": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/TAX-DPD-batch-v1-artifacts/b8-random-v1-80epoch/pn2-ddpm.ckpt",
+  "checkpoint_model_state_sha256": "c513eab0b4e47ee59af7e140af1fd84f7f65eb46dd7c5b8202d6b4da8f9f9357",
+  "checkpoint_reload_verified": true,
+  "checkpoint_selection_split": "validation",
+  "checkpoint_sha256": "c1d9198969c12965042d9b5ede95d51edb60217d309024b09a349953948df454",
+  "device": "NVIDIA B300 SXM6 AC",
+  "finite_prediction_gate_passed": true,
+  "ground_truth_free": true,
+  "inference_manifest": "/DATA/disk1/home/ghz/Work/Research/placegen-stack/rack-generalization-20260828/PlaceGen-artifacts-random-v1/artifacts/final-blind-random-v1/taxpose/rack-plate-final-blind-v2-random/inference/manifest.json",
+  "inference_manifest_sha256": "6821638818dea35cfb0bcb6074205bbc99f65d47b097760abd11be37abcdb248",
+  "model": "TAX-DPD-reconstructed-fixed-frame-DDPM",
+  "native_dataset_sha256": "c798ff24f992fbf65206734fef94f8e3eb3d23cd31fac6855b0ad987fc4f5eb7",
+  "peak_vram_mib": 55.00244140625,
+  "planner_called": false,
+  "prediction_sample_count": 12,
+  "prediction_split": "test",
+  "predictions": [
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1701,
+          "ordered_rigid_fit_rmse_m": 0.022751667116270337,
+          "position_world_m": [
+            -0.12773588451736206,
+            -0.02862322573132773,
+            0.1284623830650618
+          ],
+          "quaternion_wxyz": [
+            0.9998826655235621,
+            -0.00472816664526533,
+            -0.011547256634621809,
+            -0.008885971521750854
+          ],
+          "relative_world_from_source": [
+            [
+              0.999575400748658,
+              0.01787905248919752,
+              -0.023007774778300717,
+              0.07775170298071979
+            ],
+            [
+              -0.01766066307454131,
+              0.9997973679005789,
+              0.00966044092383391,
+              -0.023901272374089542
+            ],
+            [
+              0.02317583219494045,
+              -0.009250006549396075,
+              0.9996886106087779,
+              0.011943222215938756
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022751667116270337,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.999575400748658,
+              0.01787905248919752,
+              -0.023007774778300717,
+              -0.12773588451736206
+            ],
+            [
+              -0.01766066307454131,
+              0.9997973679005789,
+              0.00966044092383391,
+              -0.02862322573132773
+            ],
+            [
+              0.02317583219494045,
+              -0.009250006549396075,
+              0.9996886106087779,
+              0.1284623830650618
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "05e38c73bbdc22cedb9ea18ff46b496cc59aec69f1099238e5bd552583e75916",
+      "input_npz_sha256": "f9afe751514be7d296df3fef322f69542bd787c18d7e1bddb5c3f85de8c741a6",
+      "latency_seconds": 10.96628623898141,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "1d5e1c393190f2cc5aee2e06c37cc4777f40e1b4a40def2a24f891734313d988",
+        "pc_anchor_joint_centered_scaled": "46ca06f5245c03043df5b9fd93e3ea9f4589999ab315c30565404e20f6df9c1e"
+      },
+      "peak_vram_mib": 54.76025390625,
+      "sample_id": "rack-plate-final-blind-v2-000004",
+      "seed": 1701,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-60522579e81650f6"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1733,
+          "ordered_rigid_fit_rmse_m": 0.02216018002453412,
+          "position_world_m": [
+            -0.09774647470751832,
+            0.00012580329118679762,
+            0.11047763764742186
+          ],
+          "quaternion_wxyz": [
+            0.9997097665337518,
+            -0.0011590302126437768,
+            -0.012162646495558626,
+            -0.02076317355853192
+          ],
+          "relative_world_from_source": [
+            [
+              0.9988419213080045,
+              0.041542488530907716,
+              -0.02427010268608556,
+              0.10381086258054731
+            ],
+            [
+              -0.04148610103189115,
+              0.9991350945454889,
+              0.0028224579268118287,
+              -0.032336360568943325
+            ],
+            [
+              0.024366363267944308,
+              -0.0018123173663388702,
+              0.9997014533583805,
+              -0.005738691982666716
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.02216018002453412,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9988419213080045,
+              0.041542488530907716,
+              -0.02427010268608556,
+              -0.09774647470751832
+            ],
+            [
+              -0.04148610103189115,
+              0.9991350945454889,
+              0.0028224579268118287,
+              0.00012580329118679762
+            ],
+            [
+              0.024366363267944308,
+              -0.0018123173663388702,
+              0.9997014533583805,
+              0.11047763764742186
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "d5f847e73d82affc3c94a02fd5010ca3964b7043585f6b76589b3129518d1b59",
+      "input_npz_sha256": "aca341fe0a4c9390ba4da39b16fc3d5a53ad7e91bb149b23895df4a2c6cd019f",
+      "latency_seconds": 8.449429304921068,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "a0738a4e7a50ce84b7f9ec49f6d1c9003d9df98cfc3d248a2aecd2d1a577a816",
+        "pc_anchor_joint_centered_scaled": "68734579be20c76a6a062210d0e60ac0c68f03c50ae80d0605a2be2e2c8a2fe0"
+      },
+      "peak_vram_mib": 54.81787109375,
+      "sample_id": "rack-plate-final-blind-v2-000010",
+      "seed": 1733,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-2faec87676b5a3c8"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1765,
+          "ordered_rigid_fit_rmse_m": 0.024002936302101097,
+          "position_world_m": [
+            -0.143680381588446,
+            -0.049282132098560555,
+            0.10015378472889915
+          ],
+          "quaternion_wxyz": [
+            0.9998827713457936,
+            -0.004082759121532446,
+            -0.014747051397714863,
+            0.0005469176209936746
+          ],
+          "relative_world_from_source": [
+            [
+              0.9995644507123784,
+              -0.0009732896959345327,
+              -0.029495111107263824,
+              0.06166511251800578
+            ],
+            [
+              0.001214124330373483,
+              0.9999660639181429,
+              0.008148430165816338,
+              -0.07301750046393196
+            ],
+            [
+              0.02948617937564018,
+              -0.00818069185488438,
+              0.9995317111060578,
+              -0.014815033736306993
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.024002936302101097,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9995644507123784,
+              -0.0009732896959345327,
+              -0.029495111107263824,
+              -0.143680381588446
+            ],
+            [
+              0.001214124330373483,
+              0.9999660639181429,
+              0.008148430165816338,
+              -0.049282132098560555
+            ],
+            [
+              0.02948617937564018,
+              -0.00818069185488438,
+              0.9995317111060578,
+              0.10015378472889915
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "475c211f70fac16ef5a9bbc050fdcd4f1947cb772c94a8c897b4163329d95e5f",
+      "input_npz_sha256": "adbd86df270d7d116ae6dc628ceb4800c5311bd9de0dc8e474f6a2286cbf7196",
+      "latency_seconds": 5.767580294981599,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "50c2022af964d4ed146967eeffb454d118eeeb7b3073f591c811a3cc4aba90dc",
+        "pc_anchor_joint_centered_scaled": "d480efd0e0201815866bc47bb6c40bb53a41de7076aad426a2e1b2e51bfd5911"
+      },
+      "peak_vram_mib": 54.59423828125,
+      "sample_id": "rack-plate-final-blind-v2-000024",
+      "seed": 1765,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-6e2d7e2c4cd74372"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1797,
+          "ordered_rigid_fit_rmse_m": 0.022772003311362813,
+          "position_world_m": [
+            -0.11887351340394355,
+            0.02255600508285244,
+            0.1357301704201612
+          ],
+          "quaternion_wxyz": [
+            0.9998275386925585,
+            -0.008044063265817178,
+            -0.01593456775888228,
+            0.005125960250879005
+          ],
+          "relative_world_from_source": [
+            [
+              0.9994396281636881,
+              -0.009993795099812727,
+              -0.031946106422098414,
+              0.08848472644889906
+            ],
+            [
+              0.010506509784476252,
+              0.9998180351553639,
+              0.015921992030404574,
+              0.04054777841145264
+            ],
+            [
+              0.03178117222787386,
+              -0.01624871187419228,
+              0.999362765193026,
+              0.020829701368230827
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022772003311362813,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9994396281636881,
+              -0.009993795099812727,
+              -0.031946106422098414,
+              -0.11887351340394355
+            ],
+            [
+              0.010506509784476252,
+              0.9998180351553639,
+              0.015921992030404574,
+              0.02255600508285244
+            ],
+            [
+              0.03178117222787386,
+              -0.01624871187419228,
+              0.999362765193026,
+              0.1357301704201612
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "bd1cb166546ae4437bb08b6d1742d5d0f6b40ed5d33b8984a5a67866b458d8e7",
+      "input_npz_sha256": "c3130914cd4d8b613fc39ef3b39b165dbc9afe68e8260f829b2fd5d63b623d65",
+      "latency_seconds": 5.74413420597557,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "851cffa905cc6b551f88f4997ba0333c4e0652afde840ff65970f49605b38bdf",
+        "pc_anchor_joint_centered_scaled": "4020558d1ab9d2a003cba62caa334f865cfe2f6647fa96c32c7936b05875043d"
+      },
+      "peak_vram_mib": 54.64111328125,
+      "sample_id": "rack-plate-final-blind-v2-000030",
+      "seed": 1797,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-c87ed1d81220db42"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1829,
+          "ordered_rigid_fit_rmse_m": 0.022198857578774753,
+          "position_world_m": [
+            -0.1163560800234719,
+            -0.00875099580235619,
+            0.1250513543582217
+          ],
+          "quaternion_wxyz": [
+            0.999805238968862,
+            -0.009638384841295913,
+            -0.016156691630484013,
+            -0.00596212911849185
+          ],
+          "relative_world_from_source": [
+            [
+              0.9994068286638637,
+              0.012233384679547307,
+              -0.03219215928328953,
+              0.10608039530544873
+            ],
+            [
+              -0.011610487032760507,
+              0.9997431091080509,
+              0.019465671882308844,
+              0.010251702733555027
+            ],
+            [
+              0.032422020462959576,
+              -0.019080358755794013,
+              0.9992921257064172,
+              0.010596070554676054
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022198857578774753,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9994068286638637,
+              0.012233384679547307,
+              -0.03219215928328953,
+              -0.1163560800234719
+            ],
+            [
+              -0.011610487032760507,
+              0.9997431091080509,
+              0.019465671882308844,
+              -0.00875099580235619
+            ],
+            [
+              0.032422020462959576,
+              -0.019080358755794013,
+              0.9992921257064172,
+              0.1250513543582217
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "e03d617a5630f0af183ae04320fb4fe98748a88aa5635892cc2ddb2cdd8cd831",
+      "input_npz_sha256": "3ca63f16e367e690193b4f53af36563ccf415ee1753f71519b3d6dab677ac1fe",
+      "latency_seconds": 2.697665943996981,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "7db8e711caafb66a2806bafda7e4f4e2e68ae07a267faae11fcd13b45d9c3a46",
+        "pc_anchor_joint_centered_scaled": "121ed940f8ca1aabe63fdfaba9203ab95da1be440e25c4394b1fede50545dd05"
+      },
+      "peak_vram_mib": 54.85595703125,
+      "sample_id": "rack-plate-final-blind-v2-000033",
+      "seed": 1829,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-5d25f14c3cf632ab"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1861,
+          "ordered_rigid_fit_rmse_m": 0.023053745355002292,
+          "position_world_m": [
+            -0.09021139644835831,
+            -0.03832330300802073,
+            0.11806488142672977
+          ],
+          "quaternion_wxyz": [
+            0.9999079843175659,
+            -0.007424130580788307,
+            -0.009325012111994756,
+            -0.006476830414086725
+          ],
+          "relative_world_from_source": [
+            [
+              0.9997421896337965,
+              0.01309092910340583,
+              -0.018552138459795427,
+              0.10529115774597224
+            ],
+            [
+              -0.012814008673058824,
+              0.999805865905813,
+              0.014967687932810406,
+              -0.0034585881267614593
+            ],
+            [
+              0.01874447779877083,
+              -0.014726101844575337,
+              0.9997158528684611,
+              -2.860221545275543e-05
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.023053745355002292,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9997421896337965,
+              0.01309092910340583,
+              -0.018552138459795427,
+              -0.09021139644835831
+            ],
+            [
+              -0.012814008673058824,
+              0.999805865905813,
+              0.014967687932810406,
+              -0.03832330300802073
+            ],
+            [
+              0.01874447779877083,
+              -0.014726101844575337,
+              0.9997158528684611,
+              0.11806488142672977
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "9f4cbb7f62fd75abc2d5e9fcd8e5b71dedce75f273deb25561d06e1396e8889c",
+      "input_npz_sha256": "cdaa7dd80b57897e7b20312e1874fe1662a966c9a81d347b35584c8e9ef54d8f",
+      "latency_seconds": 2.722690172959119,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "1ec5376a9ff85ce7a145f262a16b5eec56f54aeab046d431538735c137613584",
+        "pc_anchor_joint_centered_scaled": "7e600ad739b22d38e7815977db6312cb99327a6a9279af84af052e00357df10a"
+      },
+      "peak_vram_mib": 54.74267578125,
+      "sample_id": "rack-plate-final-blind-v2-000044",
+      "seed": 1861,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-2f52e98863002d51"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1893,
+          "ordered_rigid_fit_rmse_m": 0.022822975083846574,
+          "position_world_m": [
+            -0.15084242235003392,
+            -0.013118811262572586,
+            0.11136530487235966
+          ],
+          "quaternion_wxyz": [
+            0.9997457461484622,
+            -0.008134264201193163,
+            -0.018275333906001133,
+            -0.010406198853755122
+          ],
+          "relative_world_from_source": [
+            [
+              0.9991154463920807,
+              0.02110441886394623,
+              -0.036372081122321556,
+              0.09099593475491219
+            ],
+            [
+              -0.02050979328652051,
+              0.9996510895426424,
+              0.01664474558387069,
+              -0.03540222955856417
+            ],
+            [
+              0.036710668205548004,
+              -0.01588403854889164,
+              0.9991996918330583,
+              -0.0007224076680143049
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022822975083846574,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9991154463920807,
+              0.02110441886394623,
+              -0.036372081122321556,
+              -0.15084242235003392
+            ],
+            [
+              -0.02050979328652051,
+              0.9996510895426424,
+              0.01664474558387069,
+              -0.013118811262572586
+            ],
+            [
+              0.036710668205548004,
+              -0.01588403854889164,
+              0.9991996918330583,
+              0.11136530487235966
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "50f3c664c0a8e04b7378e93fe18235f85deb607b37a53fe599f787afe09e9e3b",
+      "input_npz_sha256": "d4e9e8c01ab2fdf75bd076e3fc01485b46cc55af3af9b30cc5d2c1a840ee7edc",
+      "latency_seconds": 3.138138197013177,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "3c0006bba3ce2267f0d3f0ad8e1ac851bfff414398015058a1f33d0d5462584e",
+        "pc_anchor_joint_centered_scaled": "9e408e8525fcc8d7c9f250709bcb527c3206cd19aae2b0d916540c4f7abfdcd7"
+      },
+      "peak_vram_mib": 54.7021484375,
+      "sample_id": "rack-plate-final-blind-v2-000053",
+      "seed": 1893,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-47d37b2f14aac1f4"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1925,
+          "ordered_rigid_fit_rmse_m": 0.022412869943196082,
+          "position_world_m": [
+            -0.10046891998230702,
+            -0.02340601560235448,
+            0.12872795081410826
+          ],
+          "quaternion_wxyz": [
+            0.9998059984672747,
+            -0.0069068296985591434,
+            -0.015380062247097002,
+            -0.010184047213475673
+          ],
+          "relative_world_from_source": [
+            [
+              0.9993194777352584,
+              0.020576597926801877,
+              -0.03061347802340434,
+              0.09855057514436498
+            ],
+            [
+              -0.020151688044025784,
+              0.9996971617717378,
+              0.014124242086163955,
+              -0.048949822037611695
+            ],
+            [
+              0.030894835942386303,
+              -0.013497716965881455,
+              0.9994314987775813,
+              0.013951091875679347
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022412869943196082,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9993194777352584,
+              0.020576597926801877,
+              -0.03061347802340434,
+              -0.10046891998230702
+            ],
+            [
+              -0.020151688044025784,
+              0.9996971617717378,
+              0.014124242086163955,
+              -0.02340601560235448
+            ],
+            [
+              0.030894835942386303,
+              -0.013497716965881455,
+              0.9994314987775813,
+              0.12872795081410826
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "a2f34ed2907fb3ee45b86dcbfdea8e9579e4322f84cfc28e6ca9ecf194a38f67",
+      "input_npz_sha256": "1ab89ce14a7abc985af068de58e9ee69d509610e80e1bb1255b2912abab2f867",
+      "latency_seconds": 2.76119974500034,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "d1f3908a361af9fa22b4b2ebe4c56942236bf0267b82a2c1455869b848b15d14",
+        "pc_anchor_joint_centered_scaled": "304e86660edaac2da6d26475620699318fcd9283105ed842b94c4f527394d667"
+      },
+      "peak_vram_mib": 54.65185546875,
+      "sample_id": "rack-plate-final-blind-v2-000064",
+      "seed": 1925,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-f735c2e373bdb310"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1957,
+          "ordered_rigid_fit_rmse_m": 0.021807755422868037,
+          "position_world_m": [
+            -0.14352184733626902,
+            -0.01008381435758892,
+            0.11746782769400672
+          ],
+          "quaternion_wxyz": [
+            0.9998510348254006,
+            -0.009284743893939488,
+            -0.012476373898279878,
+            -0.007486106047197487
+          ],
+          "relative_world_from_source": [
+            [
+              0.9995765966212009,
+              0.015201661628947477,
+              -0.0248100175513054,
+              0.08038399491967727
+            ],
+            [
+              -0.014738301883464902,
+              0.9997155034941475,
+              0.018753520497062404,
+              -0.04465579407922697
+            ],
+            [
+              0.0250880438609496,
+              -0.018379922664714454,
+              0.9995162672503481,
+              0.002450570286367179
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.021807755422868037,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9995765966212009,
+              0.015201661628947477,
+              -0.0248100175513054,
+              -0.14352184733626902
+            ],
+            [
+              -0.014738301883464902,
+              0.9997155034941475,
+              0.018753520497062404,
+              -0.01008381435758892
+            ],
+            [
+              0.0250880438609496,
+              -0.018379922664714454,
+              0.9995162672503481,
+              0.11746782769400672
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "85c8d6979b65b47d5017c07271cd0a1440a9a6ab91d4f1ae18a92dd1d69b2f25",
+      "input_npz_sha256": "bdacdf26821a8aa10bb51d388e6b34cf04e2547bd511f5ba42b9389099023899",
+      "latency_seconds": 2.9051801890600473,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "f975dcddc022bd7925394ebe5736c3834dff06be49e19c2bc0e90370ceba44a4",
+        "pc_anchor_joint_centered_scaled": "c601ae8302ca4448d2c521a8b2e4ddf0926bcf86ededc8bef0380b1b9c1a37ab"
+      },
+      "peak_vram_mib": 54.9833984375,
+      "sample_id": "rack-plate-final-blind-v2-000070",
+      "seed": 1957,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-fd3559db1f52cdab"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 1989,
+          "ordered_rigid_fit_rmse_m": 0.022386609890247145,
+          "position_world_m": [
+            -0.16974292204515642,
+            0.0024394391455393183,
+            0.1254870914299387
+          ],
+          "quaternion_wxyz": [
+            0.9998428422576626,
+            -0.004783679959132584,
+            -0.014675491490883109,
+            -0.00871992784765231
+          ],
+          "relative_world_from_source": [
+            [
+              0.9994171856156658,
+              0.01757752059602762,
+              -0.029262943559365543,
+              0.06137855752294869
+            ],
+            [
+              -0.017296709177886102,
+              0.9998021585287603,
+              0.00982179478743904,
+              -0.03007811500164155
+            ],
+            [
+              0.02942979693572531,
+              -0.009309917879721533,
+              0.999523492711099,
+              0.0113503059755196
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022386609890247145,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9994171856156658,
+              0.01757752059602762,
+              -0.029262943559365543,
+              -0.16974292204515642
+            ],
+            [
+              -0.017296709177886102,
+              0.9998021585287603,
+              0.00982179478743904,
+              0.0024394391455393183
+            ],
+            [
+              0.02942979693572531,
+              -0.009309917879721533,
+              0.999523492711099,
+              0.1254870914299387
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "90af2c2b4393237188c0dddfde475d1aa3abda97e4c69de1b715e4c22bf6598e",
+      "input_npz_sha256": "374b4579f20dac5cab41e07b6756b6943aa937955e9bf856a6ab1dcf39fecfe6",
+      "latency_seconds": 2.2776388929923996,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "24f7ec592179bac0bb0ef3a33a2d634b941a32ce2fc8b008031e44cfed5409bb",
+        "pc_anchor_joint_centered_scaled": "a1412ab1aa6b0f048cc8887d636c5cbc59a4b7232315daf9f4409bbae1b3e0f7"
+      },
+      "peak_vram_mib": 54.591796875,
+      "sample_id": "rack-plate-final-blind-v2-000080",
+      "seed": 1989,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-203d0673c94b0d1e"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 2021,
+          "ordered_rigid_fit_rmse_m": 0.022977755252828178,
+          "position_world_m": [
+            -0.1246879378841431,
+            -0.002728803132619445,
+            0.11475982594707423
+          ],
+          "quaternion_wxyz": [
+            0.9997760322735103,
+            -0.00954256569989976,
+            -0.015385481752653796,
+            -0.010959547551742003
+          ],
+          "relative_world_from_source": [
+            [
+              0.9992863505374,
+              0.022207819874485443,
+              -0.03055490739746212,
+              0.09893718857526447
+            ],
+            [
+              -0.02162055199268849,
+              0.9995776555146486,
+              0.01941809278405934,
+              -0.031414025439645624
+            ],
+            [
+              0.030973236207676703,
+              -0.018743621108560964,
+              0.9993444527822036,
+              0.0009099753332599686
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022977755252828178,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9992863505374,
+              0.022207819874485443,
+              -0.03055490739746212,
+              -0.1246879378841431
+            ],
+            [
+              -0.02162055199268849,
+              0.9995776555146486,
+              0.01941809278405934,
+              -0.002728803132619445
+            ],
+            [
+              0.030973236207676703,
+              -0.018743621108560964,
+              0.9993444527822036,
+              0.11475982594707423
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "cb7619a406027075e90a38eeed1c001f0d9c540056fc27eb7fb80e130e697d5e",
+      "input_npz_sha256": "0f274a9dd15c8d87657e734123b6dd395bfd645aec8d772d91ced98104cea599",
+      "latency_seconds": 2.5470352770062163,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "1d2b7db68dc236c20731024436846d7d32470dd22e58e8c26c936f03c4104b00",
+        "pc_anchor_joint_centered_scaled": "fed1274f04c2d2ebbc8f3be9d16ef8193706f0767aa14f15c5b4ff17fd0ebd8e"
+      },
+      "peak_vram_mib": 55.00244140625,
+      "sample_id": "rack-plate-final-blind-v2-000083",
+      "seed": 2021,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-43b40fc85d171994"
+    },
+    {
+      "candidate_count": 1,
+      "candidates": [
+        {
+          "candidate_index": 0,
+          "candidate_seed": 2053,
+          "ordered_rigid_fit_rmse_m": 0.022678763074673928,
+          "position_world_m": [
+            -0.08655950122816,
+            0.010424984600538046,
+            0.12026576960643534
+          ],
+          "quaternion_wxyz": [
+            0.9998103831306012,
+            -0.006831131373901359,
+            -0.01752039229755871,
+            -0.005056607769312546
+          ],
+          "relative_world_from_source": [
+            [
+              0.9993349331432139,
+              0.010350666105368738,
+              -0.03496505556728418,
+              0.12036904100182572
+            ],
+            [
+              -0.00987192969934147,
+              0.99985553272404,
+              0.013836859655938021,
+              0.020819874625862194
+            ],
+            [
+              0.03510322497519825,
+              -0.013482484648685131,
+              0.9992927429957843,
+              0.00611139446816622
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "score": -0.022678763074673928,
+          "score_kind": "negative_ordered_rigid_fit_rmse_m",
+          "world_from_object": [
+            [
+              0.9993349331432139,
+              0.010350666105368738,
+              -0.03496505556728418,
+              -0.08655950122816
+            ],
+            [
+              -0.00987192969934147,
+              0.99985553272404,
+              0.013836859655938021,
+              0.010424984600538046
+            ],
+            [
+              0.03510322497519825,
+              -0.013482484648685131,
+              0.9992927429957843,
+              0.12026576960643534
+            ],
+            [
+              0.0,
+              0.0,
+              0.0,
+              1.0
+            ]
+          ]
+        }
+      ],
+      "descriptor_sha256": "ed89509a628fa3159d7484d9b28437dff84e76eeebb07ce7b66eeb76db24fad6",
+      "input_npz_sha256": "2de21eb44f60b5c0e8cfc5a9fda9fef3d87c97544a6a1e92fad673bab5c74dad",
+      "latency_seconds": 2.6512634489918128,
+      "model_input_sha256": {
+        "pc_action_joint_centered_scaled": "d61532c768fe4a6fb7106c21e5f42218f67004a09711ca06a8344cf9c2e80a09",
+        "pc_anchor_joint_centered_scaled": "f86111cdb51f480e137dac64fec592c6cfe00fb7809be41724a3fc2b83bd548e"
+      },
+      "peak_vram_mib": 54.74560546875,
+      "sample_id": "rack-plate-final-blind-v2-000087",
+      "seed": 2053,
+      "split": "test",
+      "split_group_id": "rack-plate-pose-v1.plate2.rack-plate-0.slot-left-0.rack-plate-generalization-v1-f53f75e142b0fff2"
+    }
+  ],
+  "quality_assessment": "inconclusive-until-fixed-index-evaluation",
+  "quality_claim": false,
+  "schema": "placegen.tax3dv2-ddpm-grouped-prediction-report/0.1",
+  "simulator_called": false,
+  "split_assignment_sha256": "1ccc7236cf31ad73d3a25d0b07b03a5f02043182a4557b101dffa9b5b88c996a",
+  "target_pose_or_goal_point_cloud_read": false,
+  "test_sample_count": 12,
+  "test_split_used_for_checkpoint_selection": false,
+  "total_duration_seconds": 52.68396218295675,
+  "training_manifest_read": false,
+  "training_manifest_sha256": "e3578a2459271f8c25249171f236aaf6debbb78b43bdc06f7ab8087d32defb73"
+}
