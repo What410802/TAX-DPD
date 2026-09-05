@@ -123,7 +123,17 @@ def validate_fm_checkpoint_payload(payload: Any) -> dict[str, Any]:
         "selection_split",
         "test_split_used_for_selection",
     }
-    if set(training) != training_required:
+    training_optional = {
+        "batch_size",
+        "validation_batch_size",
+        "optimizer_steps_per_epoch",
+        "validation_batches_per_epoch",
+        "peak_vram_mib",
+        "peak_reserved_mib",
+    }
+    if not training_required.issubset(training) or set(training).difference(
+        training_required | training_optional
+    ):
         raise ValueError("FM checkpoint training provenance fields are invalid")
     if training["selection_split"] != "validation":
         raise ValueError("FM checkpoint must be selected on validation")
