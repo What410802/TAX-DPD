@@ -318,6 +318,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("training and inference manifests use different split assignments")
 
     optimizer = torch.optim.Adam(module.parameters(), lr=args.learning_rate)
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
     best_validation = float("inf")
     best_state: dict[str, torch.Tensor] | None = None
     history: list[dict[str, Any]] = []
@@ -367,6 +369,17 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             best_state = {
                 key: value.detach().cpu().clone() for key, value in module.network.state_dict().items()
             }
+    if device.type == "cuda":
+        torch.cuda.synchronize(device)
+        training_peak_vram_mib: float | None = float(
+            torch.cuda.max_memory_allocated(device) / (1024**2)
+        )
+        training_peak_reserved_mib: float | None = float(
+            torch.cuda.max_memory_reserved(device) / (1024**2)
+        )
+    else:
+        training_peak_vram_mib = None
+        training_peak_reserved_mib = None
     if best_state is None:
         raise RuntimeError("no validation-selected checkpoint was produced")
     checkpoint = Path(args.output_checkpoint).expanduser().resolve()
@@ -401,6 +414,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
             "validation_batches_per_epoch": len(
                 _batched_indices(validation_count, args.validation_batch_size)
             ),
+            "peak_vram_mib": training_peak_vram_mib,
+            "peak_reserved_mib": training_peak_reserved_mib,
             "best_validation_loss": best_validation,
             "history": history,
             "selection_split": "validation",
@@ -489,6 +504,8 @@ def train(args: argparse.Namespace) -> dict[str, Any]:
         "validation_batches_per_epoch": len(
             _batched_indices(validation_count, args.validation_batch_size)
         ),
+        "training_peak_vram_mib": training_peak_vram_mib,
+        "training_peak_reserved_mib": training_peak_reserved_mib,
         "noise_scale": noise_scale,
         "learning_rate": args.learning_rate,
         "epochs": args.epochs,
