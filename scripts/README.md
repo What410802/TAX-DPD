@@ -16,6 +16,29 @@ only `.../inference/manifest.json`, verifies its split-assignment and native
 dataset identities against the checkpoint, and predicts every test sample
 without opening the top-level training manifest.
 
+`placegen_visualize_utonia_features.py` renders a cached frozen Utonia output
+for one target-free PlaceGen observation.  It does not run Utonia or TAX3Dv2;
+instead it verifies the inference manifest, Utonia cache manifest, input NPZ,
+geometry key and cached feature NPZ before producing a self-contained Plotly
+HTML and optional JSON sidecar.  For example:
+
+```bash
+pixi run --manifest-path /ABS/TAX-DPD/pixi.toml --locked python \
+  scripts/placegen_visualize_utonia_features.py \
+  --inference-manifest /ABS/PlaceGen/outputs/taxpose/<dataset>/inference/manifest.json \
+  --cache-manifest /ABS/TAX-DPD/artifacts/<dataset>/utonia-feature-cache/manifest.json \
+  --sample-id <sample-id> \
+  --output-html /ABS/artifacts/utonia-feature-visualization/<sample-id>.html \
+  --summary /ABS/artifacts/utonia-feature-visualization/<sample-id>.summary.json
+```
+
+The HTML has three world-frame views: original parent/child ordered slots,
+joint PCA component 1 of the 576-D cached features, and their per-slot L2
+norm.  The scalar ranges are shared between parent and child in each feature
+view.  The visualization only establishes feature/input provenance and an
+inspectable representation; it is not a prediction-quality or execution
+result.
+
 Both grouped and request prediction use the reconstructed fixed-frame
 wrapper's `clip_denoised=True` diffusion safety/default.  An explicit `False`
 override was found to amplify a validation sample to hundreds of metres; the
